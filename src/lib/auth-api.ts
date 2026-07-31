@@ -1,0 +1,88 @@
+import type { Permissions } from "./permissions";
+import { apiHeaders } from "@/lib/api-locale";
+import { apiFallback } from "@/lib/i18n/api-fallback";
+
+export interface AuthResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    id?: number;
+    username: string;
+    role?: string;
+    ad_soyad?: string | null;
+    must_change_password?: boolean;
+    permissions?: Permissions;
+  };
+}
+
+function apiUrl(path: string): string {
+  return new URL(path, window.location.origin).toString();
+}
+
+async function parseAuthResponse(response: Response): Promise<AuthResponse> {
+  const text = await response.text();
+
+  if (!text.trim()) {
+    if (response.status === 401) {
+      return { success: false, message: apiFallback("errors.wrongPassword") };
+    }
+    if (response.status === 403) {
+      return { success: false, message: apiFallback("errors.passiveAccount") };
+    }
+    throw new Error(apiFallback("errors.connection"));
+  }
+
+  try {
+    const data = JSON.parse(text) as AuthResponse;
+    if (!response.ok && data.success !== false) {
+      return {
+        success: false,
+        message: data.message ?? "Giriş başarısız.",
+      };
+    }
+    if (!response.ok && !data.message) {
+      return {
+        success: false,
+        message:
+          response.status === 401
+            ? apiFallback("errors.wrongPassword")
+            : apiFallback("errors.invalidRequest"),
+      };
+    }
+    return data;
+  } catch {
+    throw new Error(apiFallback("errors.connection"));
+  }
+}
+
+export async function checkAuth(): Promise<AuthResponse> {
+  const response = await fetch(apiUrl("/api/auth.php?action=me"), {
+    method: "GET",
+    headers: apiHeaders(),
+    credentials: "include",
+    cache: "no-store",
+  });
+  return parseAuthResponse(response);
+}
+
+export async function loginAdmin(
+  username: string,
+  password: string
+): Promise<AuthResponse> {
+  const response = await fetch(apiUrl("/api/auth.php?action=login"), {
+    method: "POST",
+    headers: apiHeaders({ "Content-Type": "application/json" }),
+    credentials: "include",
+    body: JSON.stringify({ username, password }),
+  });
+  return parseAuthResponse(response);
+}
+
+export async function logoutAdmin(): Promise<AuthResponse> {
+  const response = await fetch(apiUrl("/api/auth.php?action=logout"), {
+    method: "POST",
+    headers: apiHeaders(),
+    credentials: "include",
+  });
+  return parseAuthResponse(response);
+}

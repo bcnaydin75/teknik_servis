@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Admin panel gece modu — yalnızca .admin-dark altında, müşteri sayfasını etkilemez */
+@custom-variant dark (&:where(.admin-dark, .admin-dark *));
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+.admin-dark {
+  --background: #020617;
+  --foreground: #f1f5f9;
+}
+
+/* Müşteri sayfası her zaman açık tema */
+.customer-page {
+  color-scheme: light;
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+button:not(:disabled),
+[role="button"]:not(:disabled),
+label[for],
+select,
+a {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-from-bottom-4 {
+  from {
+    transform: translateY(1rem);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fade-in;
+}
+
+.slide-in-from-bottom-4 {
+  animation-name: slide-in-from-bottom-4;
+}
+
+.duration-500 {
+  animation-duration: 500ms;
+}
