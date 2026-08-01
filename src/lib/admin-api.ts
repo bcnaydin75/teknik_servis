@@ -8,16 +8,13 @@ import type {
   InventoryResponse,
   UpdateDevicePayload,
 } from "@/types/admin";
+import { apiUrl, apiUrlWithSearch } from "@/lib/api-config";
 import { apiHeaders } from "@/lib/api-locale";
 import { apiFallback } from "@/lib/i18n/api-fallback";
 
 const fetchOptions: RequestInit = {
   credentials: "include",
 };
-
-function apiUrl(path: string): string {
-  return new URL(path, window.location.origin).toString();
-}
 
 async function parseJson<T>(response: Response): Promise<T> {
   const text = await response.text();
@@ -51,13 +48,14 @@ export async function fetchDevices(options?: {
   year?: number;
   month?: number;
 }): Promise<GetDevicesResponse> {
-  const url = new URL("/api/get_devices.php", window.location.origin);
-  if (options?.archived) url.searchParams.set("archived", "1");
-  if (options?.q?.trim()) url.searchParams.set("q", options.q.trim());
-  if (options?.year) url.searchParams.set("year", String(options.year));
-  if (options?.month) url.searchParams.set("month", String(options.month));
+  const url = apiUrlWithSearch("/api/get_devices.php", {
+    archived: options?.archived ? "1" : undefined,
+    q: options?.q?.trim() || undefined,
+    year: options?.year,
+    month: options?.month,
+  });
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     ...fetchOptions,
     method: "GET",
     headers: apiHeaders(),
@@ -316,10 +314,11 @@ export async function checkCustomer(params: {
   telefon?: string;
   ad_soyad?: string;
 }): Promise<import("@/types/admin").CustomerCheckResponse> {
-  const url = new URL("/api/check_customer.php", window.location.origin);
-  if (params.telefon) url.searchParams.set("telefon", params.telefon);
-  if (params.ad_soyad) url.searchParams.set("ad_soyad", params.ad_soyad);
-  const response = await fetch(url.toString(), {
+  const url = apiUrlWithSearch("/api/check_customer.php", {
+    telefon: params.telefon,
+    ad_soyad: params.ad_soyad,
+  });
+  const response = await fetch(url, {
     ...fetchOptions,
     headers: apiHeaders(),
     cache: "no-store",

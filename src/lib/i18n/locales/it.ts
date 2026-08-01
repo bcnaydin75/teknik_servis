@@ -129,12 +129,22 @@ export const messages = {
     login: {
       title: "Pannello di amministrazione",
       subtitle: "Accedi per continuare",
+      systemActive: "Sistema attivo",
+      versionBadge: "Teknik Servis v1.0",
       username: "Nome utente",
       usernamePlaceholder: "Inserisci nome utente",
       password: "Password",
       passwordPlaceholder: "Inserisci la password",
+      rememberMe: "Ricordami",
+      forgotPassword: "Password dimenticata?",
+      forgotPasswordHint:
+        "Contatta l'amministratore di sistema per reimpostare la password o accedi con un account amministratore.",
+      backToCustomer: "← Torna alla pagina cliente",
+      keyboardHint: "Premi Invio per accedere",
+      tooManyAttempts: "Troppi tentativi falliti. Attendi qualche minuto.",
       submit: "Accedi",
       submitting: "Accesso in corso...",
+      loading: "Caricamento...",
     },
     shell: {
       addDeviceAria: "Aggiungi nuovo dispositivo",

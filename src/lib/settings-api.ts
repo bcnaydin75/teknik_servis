@@ -1,14 +1,11 @@
 import type { Permissions } from "./permissions";
 import type { ShopSettings } from "@/types/settings";
 import type { StaffMember, PosItem, PosCartItem, CariCustomer, CariTransaction } from "@/types/settings";
+import { apiUrl } from "@/lib/api-config";
 import { apiHeaders } from "@/lib/api-locale";
 import { apiFallback } from "@/lib/i18n/api-fallback";
 
 const fetchOpts: RequestInit = { credentials: "include" };
-
-function apiUrl(path: string): string {
-  return new URL(path, window.location.origin).toString();
-}
 
 async function parseJson<T>(response: Response): Promise<T> {
   const text = await response.text();
@@ -105,11 +102,15 @@ export async function changePassword(oldPassword: string, newPassword: string): 
 }
 
 export async function fetchPublicSettings(): Promise<{ success: boolean; data?: ShopSettings }> {
-  const res = await fetch(apiUrl("/api/public_settings.php?action=profile"), {
-    headers: apiHeaders(),
-    cache: "no-store",
-  });
-  return parseJson(res);
+  try {
+    const res = await fetch(apiUrl("/api/public_settings.php?action=profile"), {
+      headers: apiHeaders(),
+      cache: "no-store",
+    });
+    return parseJson(res);
+  } catch {
+    return { success: false };
+  }
 }
 
 export async function fetchPosItems(): Promise<{ success: boolean; data?: PosItem[]; message?: string }> {

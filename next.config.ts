@@ -1,17 +1,19 @@
 import type { NextConfig } from "next";
-
-const phpApiBase =
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost/teknik_servis_projesi/backend";
+import { getApiBaseUrl } from "./src/lib/api-config";
 
 const nextConfig: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ["192.168.1.85"],
   async rewrites() {
+    const phpApiBase = getApiBaseUrl();
     return [
       {
         source: "/api/:path*",
         destination: `${phpApiBase}/api/:path*`,
+      },
+      {
+        source: "/backend/:path*",
+        destination: `${phpApiBase}/:path*`,
       },
     ];
   },

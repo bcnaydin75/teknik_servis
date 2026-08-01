@@ -11,6 +11,14 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   ru: "Русский",
 };
 
+export const LOCALE_FLAGS: Record<Locale, string> = {
+  tr: "🇹🇷",
+  en: "🇬🇧",
+  es: "🇪🇸",
+  it: "🇮🇹",
+  ru: "🇷🇺",
+};
+
 export const LOCALE_BCP47: Record<Locale, string> = {
   tr: "tr-TR",
   en: "en-US",

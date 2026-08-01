@@ -1,3 +1,5 @@
+import { getAppOrigin } from "@/lib/api-config";
+
 interface WhatsAppMessageParams {
   musteriAdi: string;
   cihazModeli: string;
@@ -41,8 +43,5 @@ export function getWhatsAppUrl(phone: string | null, message: string): string | 
 }
 
 export function getTrackingUrl(takipKodu: string): string {
-  if (typeof window !== "undefined") {
-    return `${window.location.origin}/?kod=${encodeURIComponent(takipKodu)}`;
-  }
-  return `http://localhost:3000/?kod=${encodeURIComponent(takipKodu)}`;
+  return `${getAppOrigin()}/?kod=${encodeURIComponent(takipKodu)}`;
 }

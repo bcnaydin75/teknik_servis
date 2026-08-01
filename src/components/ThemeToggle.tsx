@@ -6,9 +6,10 @@ import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 type ThemeToggleProps = {
   showLabels?: boolean;
+  variant?: "default" | "glass";
 };
 
-export default function ThemeToggle({ showLabels = false }: ThemeToggleProps) {
+export default function ThemeToggle({ showLabels = false, variant = "default" }: ThemeToggleProps) {
   const { t } = useTranslation();
   const { theme, resolvedTheme, setTheme } = useAdminTheme();
   const [mounted, setMounted] = useState(false);
@@ -48,13 +49,20 @@ export default function ThemeToggle({ showLabels = false }: ThemeToggleProps) {
     );
   }
 
+  const glassBtn =
+    "flex h-9 w-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-slate-200 backdrop-blur-md transition hover:bg-white/15";
+
   return (
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? t("admin.settings.tema.light") : t("admin.settings.tema.dark")}
       title={isDark ? t("admin.settings.tema.light") : t("admin.settings.tema.dark")}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+      className={
+        variant === "glass"
+          ? glassBtn
+          : "flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+      }
     >
       {isDark ? (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

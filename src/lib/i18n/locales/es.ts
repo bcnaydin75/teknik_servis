@@ -129,12 +129,22 @@ export const messages = {
     login: {
       title: "Panel de administración",
       subtitle: "Inicie sesión para continuar",
+      systemActive: "Sistema activo",
+      versionBadge: "Teknik Servis v1.0",
       username: "Usuario",
       usernamePlaceholder: "Introduzca el usuario",
       password: "Contraseña",
       passwordPlaceholder: "Introduzca su contraseña",
+      rememberMe: "Recordarme",
+      forgotPassword: "¿Olvidó su contraseña?",
+      forgotPasswordHint:
+        "Contacte al administrador del sistema para restablecer la contraseña o inicie sesión con una cuenta de administrador.",
+      backToCustomer: "← Volver a la página del cliente",
+      keyboardHint: "Pulse Enter para iniciar sesión",
+      tooManyAttempts: "Demasiados intentos fallidos. Espere unos minutos.",
       submit: "Iniciar sesión",
       submitting: "Iniciando sesión...",
+      loading: "Cargando...",
     },
     shell: {
       addDeviceAria: "Añadir nuevo dispositivo",

@@ -129,12 +129,22 @@ export const messages = {
     login: {
       title: "Yönetim Paneli",
       subtitle: "Devam etmek için giriş yapın",
+      systemActive: "Sistem Aktif",
+      versionBadge: "Teknik Servis v1.0",
       username: "Kullanıcı Adı",
       usernamePlaceholder: "Kullanıcı adı giriniz",
       password: "Şifre",
       passwordPlaceholder: "Şifrenizi giriniz",
+      rememberMe: "Beni Hatırla",
+      forgotPassword: "Şifremi Unuttum",
+      forgotPasswordHint:
+        "Şifre sıfırlama için sistem yöneticinize başvurun veya Ayarlar üzerinden yönetici hesabıyla giriş yapın.",
+      backToCustomer: "← Müşteri sayfasına dön",
+      keyboardHint: "Enter ile hızlı giriş",
+      tooManyAttempts: "Çok fazla başarısız deneme. Lütfen birkaç dakika bekleyin.",
       submit: "Giriş Yap",
       submitting: "Giriş yapılıyor...",
+      loading: "Yükleniyor...",
     },
     shell: {
       addDeviceAria: "Yeni cihaz ekle",

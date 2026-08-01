@@ -1,4 +1,5 @@
 import type { Permissions } from "./permissions";
+import { apiUrl } from "@/lib/api-config";
 import { apiHeaders } from "@/lib/api-locale";
 import { apiFallback } from "@/lib/i18n/api-fallback";
 
@@ -13,10 +14,6 @@ export interface AuthResponse {
     must_change_password?: boolean;
     permissions?: Permissions;
   };
-}
-
-function apiUrl(path: string): string {
-  return new URL(path, window.location.origin).toString();
 }
 
 async function parseAuthResponse(response: Response): Promise<AuthResponse> {

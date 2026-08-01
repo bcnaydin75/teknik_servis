@@ -129,12 +129,22 @@ export const messages = {
     login: {
       title: "Admin Panel",
       subtitle: "Sign in to continue",
+      systemActive: "System Active",
+      versionBadge: "Teknik Servis v1.0",
       username: "Username",
       usernamePlaceholder: "Enter username",
       password: "Password",
       passwordPlaceholder: "Enter your password",
+      rememberMe: "Remember me",
+      forgotPassword: "Forgot password?",
+      forgotPasswordHint:
+        "Contact your system administrator to reset your password, or sign in with an admin account via Settings.",
+      backToCustomer: "← Back to customer page",
+      keyboardHint: "Press Enter to sign in",
+      tooManyAttempts: "Too many failed attempts. Please wait a few minutes.",
       submit: "Sign In",
       submitting: "Signing in...",
+      loading: "Loading...",
     },
     shell: {
       addDeviceAria: "Add new device",

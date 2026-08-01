@@ -129,12 +129,22 @@ export const messages = {
     login: {
       title: "Панель администратора",
       subtitle: "Войдите, чтобы продолжить",
+      systemActive: "Система активна",
+      versionBadge: "Teknik Servis v1.0",
       username: "Имя пользователя",
       usernamePlaceholder: "Введите имя пользователя",
       password: "Пароль",
       passwordPlaceholder: "Введите пароль",
+      rememberMe: "Запомнить меня",
+      forgotPassword: "Забыли пароль?",
+      forgotPasswordHint:
+        "Обратитесь к системному администратору для сброса пароля или войдите с учётной записью администратора.",
+      backToCustomer: "← На страницу клиента",
+      keyboardHint: "Enter — быстрый вход",
+      tooManyAttempts: "Слишком много неудачных попыток. Подождите несколько минут.",
       submit: "Войти",
       submitting: "Вход...",
+      loading: "Загрузка...",
     },
     shell: {
       addDeviceAria: "Добавить новое устройство",
