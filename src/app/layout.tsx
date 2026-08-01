@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Teknik Servis | Cihaz Durumu Sorgulama",
   description:
     "Takip kodunuz ile cihazınızın tamir durumunu, değişen parçaları ve ücret bilgilerini anında görüntüleyin.",
+  icons: {
+    icon: [{ url: "/admin-logo.png", type: "image/png" }],
+    apple: [{ url: "/admin-logo.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({

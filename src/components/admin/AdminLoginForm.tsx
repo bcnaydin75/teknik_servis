@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { loginAdmin } from "@/lib/auth-api";
-import { resolveBackendAssetUrl } from "@/lib/api-config";
+import { ADMIN_BRAND_LOGO } from "@/lib/brand";
 import { LOCALES, LOCALE_FLAGS, type Locale } from "@/lib/i18n/config";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { fetchPublicSettings } from "@/lib/settings-api";
@@ -98,9 +98,7 @@ export default function AdminLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [shop, setShop] = useState<ShopSettings | null>(null);
-  const [logoError, setLogoError] = useState(false);
 
-  const logoUrl = resolveBackendAssetUrl(shop?.logo_url);
   const shopName = shop?.firma_adi ?? t("customer.hero.defaultShopName");
 
   useEffect(() => {
@@ -294,32 +292,15 @@ export default function AdminLoginForm() {
             )}
 
             <div className="mb-6 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/10 shadow-lg shadow-blue-900/30 backdrop-blur-md">
-                {logoUrl && !logoError ? (
-                  <Image
-                    src={logoUrl}
-                    alt={shopName}
-                    width={64}
-                    height={64}
-                    className="h-full w-full object-contain p-1.5"
-                    onError={() => setLogoError(true)}
-                    unoptimized
-                  />
-                ) : (
-                  <svg
-                    className="h-7 w-7 text-blue-200"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                )}
+              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-blue-900/40 ring-2 ring-white/15">
+                <Image
+                  src={ADMIN_BRAND_LOGO}
+                  alt={shopName}
+                  width={112}
+                  height={112}
+                  className="h-full w-full object-cover"
+                  priority
+                />
               </div>
 
               {shop?.firma_adi && (
