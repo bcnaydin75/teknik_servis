@@ -39,7 +39,7 @@ export default function AdminShell({
   }, [menuOpen]);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-app bg-slate-50 dark:bg-slate-950">
       <AdminSidebar
         mobileOpen={menuOpen}
         onMobileClose={() => setMenuOpen(false)}
@@ -49,7 +49,7 @@ export default function AdminShell({
         <PasswordChangeBanner />
 
         {/* Mobil üst bar */}
-        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
+        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
           <div className="flex items-center gap-3 px-4 py-3">
             <button
               type="button"

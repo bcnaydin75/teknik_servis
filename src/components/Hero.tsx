@@ -18,7 +18,7 @@ export default function Hero() {
   const firmaAdi = shop?.firma_adi ?? t("customer.hero.defaultShopName");
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 pb-16 pt-[calc(env(safe-area-inset-top,0px)+4rem)] sm:px-6 sm:pb-24 sm:pt-[calc(env(safe-area-inset-top,0px)+6rem)] lg:px-8">
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.25),transparent_50%)]" />
       <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
 

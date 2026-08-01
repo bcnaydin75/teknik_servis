@@ -156,7 +156,7 @@ export default function AdminSidebar({
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={onMobileClose}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col bg-slate-900 shadow-2xl animate-in slide-in-from-left duration-200">
+          <aside className="absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col bg-slate-900 pt-[env(safe-area-inset-top,0px)] shadow-2xl animate-in slide-in-from-left duration-200">
             {sidebarContent}
           </aside>
         </div>
