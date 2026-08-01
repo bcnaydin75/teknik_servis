@@ -42,21 +42,18 @@ function floodFillBackground(pixels, width, height) {
   }
 }
 
-function circleMaskSvg(size, radiusRatio = 0.485) {
-  const cx = size / 2;
-  const cy = size / 2;
+function circleMaskSvg(size, radiusRatio = 0.455) {
   const r = size * radiusRatio;
   return Buffer.from(
     `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="white"/>
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="white"/>
     </svg>`
   );
 }
 
-async function makeCircularIcon(input, output, size) {
-  const workSize = Math.max(size, 512);
-  const { data, info } = await sharp(input)
-    .resize(workSize, workSize, {
+async function extractBadge(size = 1024) {
+  const { data, info } = await sharp(src)
+    .resize(size, size, {
       fit: "contain",
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
@@ -67,21 +64,50 @@ async function makeCircularIcon(input, output, size) {
   const pixels = Buffer.from(data);
   floodFillBackground(pixels, info.width, info.height);
 
-  const cleaned = await sharp(pixels, {
+  return sharp(pixels, {
     raw: { width: info.width, height: info.height, channels: 4 },
   })
-    .resize(size, size, {
-      fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
-    .png()
-    .toBuffer();
-
-  await sharp(cleaned)
     .composite([{ input: circleMaskSvg(size), blend: "dest-in" }])
     .png()
-    .toFile(output);
+    .toBuffer();
 }
+
+/** Gri rozet kareyi tam doldurur — şeffaflık yok, iOS beyaz arka plan eklemez */
+async function makeHomeIcon(badgeBuffer, output, size) {
+  let pipeline = sharp(badgeBuffer).resize(size, size, {
+    fit: "cover",
+    position: "centre",
+  });
+
+  const resized = await pipeline.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+
+  let transparent = 0;
+  for (let i = 3; i < resized.data.length; i += 4) {
+    if (resized.data[i] < 255) transparent++;
+  }
+
+  if (transparent > 0) {
+    pipeline = sharp(resized.data, {
+      raw: {
+        width: resized.info.width,
+        height: resized.info.height,
+        channels: resized.info.channels,
+      },
+    }).flatten({ background: { r: 110, g: 115, b: 122 } });
+  } else {
+    pipeline = sharp(resized.data, {
+      raw: {
+        width: resized.info.width,
+        height: resized.info.height,
+        channels: resized.info.channels,
+      },
+    });
+  }
+
+  await pipeline.png().toFile(output);
+}
+
+const badge = await extractBadge(1024);
 
 const outputs = [
   ["public/icons/icon-192.png", 192],
@@ -93,7 +119,7 @@ const outputs = [
 ];
 
 for (const [rel, size] of outputs) {
-  await makeCircularIcon(src, path.join(root, rel), size);
+  await makeHomeIcon(badge, path.join(root, rel), size);
 }
 
-console.log("Circular transparent home screen icons generated.");
+console.log("Home screen icons: circular gray badge, no transparent background.");
