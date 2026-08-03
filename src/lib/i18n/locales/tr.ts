@@ -120,6 +120,7 @@ export const messages = {
       total: "Toplam",
       technicianNote: "Teknisyen Notu",
       lastUpdate: "Son güncelleme: {date}",
+      noReplacedParts: "Henüz parça değişimi kaydedilmedi.",
     },
     footer: {
       copyright: "© {year} Teknik Servis Takip Sistemi",
@@ -230,6 +231,11 @@ export const messages = {
         saveFailed: "Kaydedilemedi.",
         logoUploaded: "Logo yüklendi.",
         logoFailed: "Logo yüklenemedi.",
+        showCostDetail: "Müşteri sayfasında ücret detayı",
+        showCostDetailHint:
+          "Gizlenirse müşteri yalnızca değişen parçaları görür; fiyat bilgisi gösterilmez.",
+        showCostDetailOn: "Göster",
+        showCostDetailOff: "Gizle (sadece parçalar)",
       },
       personel: {
         newStaff: "Yeni Personel",

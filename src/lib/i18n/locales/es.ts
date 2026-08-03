@@ -120,6 +120,7 @@ export const messages = {
       total: "Total",
       technicianNote: "Nota del técnico",
       lastUpdate: "Última actualización: {date}",
+      noReplacedParts: "Aún no hay piezas reemplazadas registradas.",
     },
     footer: {
       copyright: "© {year} Sistema de Seguimiento de Reparaciones",
@@ -230,6 +231,11 @@ export const messages = {
         saveFailed: "No se pudo guardar.",
         logoUploaded: "Logo subido.",
         logoFailed: "No se pudo subir el logo.",
+        showCostDetail: "Mostrar detalle de costes en la página del cliente",
+        showCostDetailHint:
+          "Si se oculta, el cliente solo verá las piezas cambiadas; no se muestran precios.",
+        showCostDetailOn: "Mostrar",
+        showCostDetailOff: "Ocultar (solo piezas)",
       },
       personel: {
         newStaff: "Nuevo empleado",

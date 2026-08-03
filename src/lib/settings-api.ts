@@ -4,6 +4,7 @@ import type { StaffMember, PosItem, PosCartItem, CariCustomer, CariTransaction }
 import { apiUrl } from "@/lib/api-config";
 import { apiHeaders } from "@/lib/api-locale";
 import { apiFallback } from "@/lib/i18n/api-fallback";
+import { normalizeShopSettings } from "@/lib/normalize-shop-settings";
 
 const fetchOpts: RequestInit = { credentials: "include" };
 
@@ -22,7 +23,11 @@ export async function fetchShopSettings(): Promise<{ success: boolean; data?: Sh
     headers: apiHeaders(),
     cache: "no-store",
   });
-  return parseJson(res);
+  const parsed = await parseJson<{ success: boolean; data?: Record<string, unknown>; message?: string }>(res);
+  if (parsed.success && parsed.data) {
+    return { ...parsed, data: normalizeShopSettings(parsed.data) };
+  }
+  return parsed as { success: boolean; data?: ShopSettings; message?: string };
 }
 
 export async function saveShopSettings(data: Partial<ShopSettings>): Promise<{ success: boolean; message?: string }> {
@@ -107,7 +112,11 @@ export async function fetchPublicSettings(): Promise<{ success: boolean; data?: 
       headers: apiHeaders(),
       cache: "no-store",
     });
-    return parseJson(res);
+    const parsed = await parseJson<{ success: boolean; data?: Record<string, unknown> }>(res);
+    if (parsed.success && parsed.data) {
+      return { success: true, data: normalizeShopSettings(parsed.data) };
+    }
+    return parsed as { success: boolean; data?: ShopSettings };
   } catch {
     return { success: false };
   }

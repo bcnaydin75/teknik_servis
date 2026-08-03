@@ -120,6 +120,7 @@ export const messages = {
       total: "Totale",
       technicianNote: "Nota del tecnico",
       lastUpdate: "Ultimo aggiornamento: {date}",
+      noReplacedParts: "Nessuna parte sostituita registrata.",
     },
     footer: {
       copyright: "© {year} Sistema di Tracciamento Riparazioni",
@@ -230,6 +231,11 @@ export const messages = {
         saveFailed: "Impossibile salvare.",
         logoUploaded: "Logo caricato.",
         logoFailed: "Impossibile caricare il logo.",
+        showCostDetail: "Mostra dettaglio costi sulla pagina cliente",
+        showCostDetailHint:
+          "Se nascosto, il cliente vede solo i pezzi sostituiti; i prezzi non vengono mostrati.",
+        showCostDetailOn: "Mostra",
+        showCostDetailOff: "Nascondi (solo pezzi)",
       },
       personel: {
         newStaff: "Nuovo dipendente",

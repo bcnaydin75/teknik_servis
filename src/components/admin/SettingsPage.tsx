@@ -65,8 +65,10 @@ export default function SettingsPage() {
     if (!shop) return;
     setError(null);
     const res = await saveShopSettings(shop);
-    if (res.success) setMessage(t("admin.settings.firma.saved"));
-    else setError(res.message ?? t("admin.settings.firma.saveFailed"));
+    if (res.success) {
+      setMessage(t("admin.settings.firma.saved"));
+      window.dispatchEvent(new Event("site-locale-changed"));
+    } else setError(res.message ?? t("admin.settings.firma.saveFailed"));
   }
 
   async function handleLogo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -213,6 +215,36 @@ export default function SettingsPage() {
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{t("admin.settings.firma.email")}</label>
               <input value={shop.email ?? ""} onChange={(e) => setShop({ ...shop, email: e.target.value })} type="email" className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {t("admin.settings.firma.showCostDetail")}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">{t("admin.settings.firma.showCostDetailHint")}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setShop({ ...shop, ucret_detayi_goster: true })}
+                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                  shop.ucret_detayi_goster !== false
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+                }`}
+              >
+                {t("admin.settings.firma.showCostDetailOn")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShop({ ...shop, ucret_detayi_goster: false })}
+                className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
+                  shop.ucret_detayi_goster === false
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+                }`}
+              >
+                {t("admin.settings.firma.showCostDetailOff")}
+              </button>
             </div>
           </div>
           <p className="text-xs text-slate-500">{t("admin.settings.firma.hint")}</p>

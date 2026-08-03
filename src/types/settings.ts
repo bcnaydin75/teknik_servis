@@ -5,6 +5,8 @@ export interface ShopSettings {
   email: string | null;
   logo_url: string | null;
   default_locale?: string;
+  /** Müşteri takip sayfasında ücret detayı kutusu (varsayılan: göster) */
+  ucret_detayi_goster?: boolean;
 }
 
 export interface StaffMember {

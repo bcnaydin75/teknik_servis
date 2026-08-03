@@ -120,6 +120,7 @@ export const messages = {
       total: "Итого",
       technicianNote: "Примечание техника",
       lastUpdate: "Последнее обновление: {date}",
+      noReplacedParts: "Заменённые детали пока не указаны.",
     },
     footer: {
       copyright: "© {year} Система отслеживания ремонта",
@@ -230,6 +231,11 @@ export const messages = {
         saveFailed: "Не удалось сохранить.",
         logoUploaded: "Логотип загружен.",
         logoFailed: "Не удалось загрузить логотип.",
+        showCostDetail: "Показывать детали стоимости на странице клиента",
+        showCostDetailHint:
+          "Если скрыто, клиент видит только заменённые детали; цены не отображаются.",
+        showCostDetailOn: "Показывать",
+        showCostDetailOff: "Скрыть (только детали)",
       },
       personel: {
         newStaff: "Новый сотрудник",

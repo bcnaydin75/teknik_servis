@@ -120,6 +120,7 @@ export const messages = {
       total: "Total",
       technicianNote: "Technician Note",
       lastUpdate: "Last updated: {date}",
+      noReplacedParts: "No replaced parts recorded yet.",
     },
     footer: {
       copyright: "© {year} Repair Tracking System",
@@ -230,6 +231,11 @@ export const messages = {
         saveFailed: "Could not save.",
         logoUploaded: "Logo uploaded.",
         logoFailed: "Could not upload logo.",
+        showCostDetail: "Show cost details on customer page",
+        showCostDetailHint:
+          "When hidden, customers only see replaced parts; prices are not shown.",
+        showCostDetailOn: "Show",
+        showCostDetailOff: "Hide (parts only)",
       },
       personel: {
         newStaff: "New Staff Member",

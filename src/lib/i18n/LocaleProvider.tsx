@@ -25,6 +25,8 @@ type LocaleContextValue = {
   t: (key: string, params?: Record<string, string | number>) => string;
   bcp47: string;
   ready: boolean;
+  /** Müşteri sayfasında ücret detayı gösterilsin mi (varsayılan: evet) */
+  showCostDetail: boolean;
 };
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -32,14 +34,18 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   const [ready, setReady] = useState(false);
+  const [showCostDetail, setShowCostDetail] = useState(true);
 
   const loadLocale = useCallback(async () => {
     try {
       const res = await fetchPublicSettings();
-      if (res.success && res.data?.default_locale) {
-        const next = normalizeLocale(res.data.default_locale);
-        setLocaleState(next);
-        setClientLocale(next);
+      if (res.success && res.data) {
+        if (res.data.default_locale) {
+          const next = normalizeLocale(res.data.default_locale);
+          setLocaleState(next);
+          setClientLocale(next);
+        }
+        setShowCostDetail(res.data.ucret_detayi_goster !== false);
       }
     } catch {
       /* keep default */
@@ -89,8 +95,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       t,
       bcp47: LOCALE_BCP47[locale],
       ready,
+      showCostDetail,
     }),
-    [locale, setLocale, t, ready]
+    [locale, setLocale, t, ready, showCostDetail]
   );
 
   return (
@@ -107,6 +114,6 @@ export function useLocale(): LocaleContextValue {
 }
 
 export function useTranslation() {
-  const { t, locale, bcp47, setLocale, ready } = useLocale();
-  return { t, locale, bcp47, setLocale, ready };
+  const { t, locale, bcp47, setLocale, ready, showCostDetail } = useLocale();
+  return { t, locale, bcp47, setLocale, ready, showCostDetail };
 }
