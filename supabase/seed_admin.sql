@@ -4,12 +4,15 @@
 INSERT INTO admin_users (username, password_hash, role, aktif, must_change_password)
 VALUES (
   'bcnaydin75',
-  '$2b$10$avUzwBwu.lEU7P1biyeqEedihdw6yGn8u6HV1hdkF/BRYYIw0C7Yy',
+  '$2b$10$8d0T8UENFHOyd3xDictI2O.sdnaegKssdqSrHgPjgBn5b2OHZr7xi',
   'admin',
   TRUE,
   FALSE
 )
-ON CONFLICT (username) DO NOTHING;
+ON CONFLICT (username) DO UPDATE SET
+  password_hash = EXCLUDED.password_hash,
+  role = EXCLUDED.role,
+  aktif = EXCLUDED.aktif;
 
 UPDATE admin_users
 SET tenant_id = id
