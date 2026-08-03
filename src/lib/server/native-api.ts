@@ -22,7 +22,7 @@ const ROUTES: Record<
   (request: NextRequest) => Promise<NextResponse>
 > = {
   "auth.php": handleAuth,
-  "ping.php": () => handlePing(),
+  "ping.php": handlePing,
   "public_settings.php": handlePublicSettings,
   "get_devices.php": handleGetDevices,
   "dashboard_stats.php": () => handleDashboardStats(),

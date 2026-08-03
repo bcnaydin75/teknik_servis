@@ -34,10 +34,23 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     const { data: user, error } = await db
       .from("admin_users")
       .select("*")
-      .eq("username", username)
+      .ilike("username", username)
       .maybeSingle();
 
-    if (error || !user || !(await verifyPassword(user.password_hash, password))) {
+    if (error) {
+      console.error("[auth/login] supabase:", error.message);
+      return jsonFail(
+        "Veritabanı bağlantı hatası. SUPABASE_SERVICE_ROLE_KEY kontrol edin.",
+        500
+      );
+    }
+
+    if (!user) {
+      return jsonFail("Kullanıcı adı veya şifre hatalı.", 401);
+    }
+
+    const hash = String(user.password_hash ?? "").trim();
+    if (!(await verifyPassword(hash, password))) {
       return jsonFail("Kullanıcı adı veya şifre hatalı.", 401);
     }
 
@@ -83,10 +96,40 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   return jsonFail("Geçersiz istek.", 405);
 }
 
-export async function handlePing(): Promise<NextResponse> {
-  return NextResponse.json({
+export async function handlePing(request?: NextRequest): Promise<NextResponse> {
+  const base = {
     ok: true,
     api: "native",
     node: process.version,
-  });
+  };
+
+  if (request?.nextUrl.searchParams.get("check") === "db") {
+    try {
+      const db = getSupabaseAdmin();
+      const { count, error } = await db
+        .from("admin_users")
+        .select("*", { count: "exact", head: true });
+
+      const { data: sample } = await db
+        .from("admin_users")
+        .select("username, aktif")
+        .ilike("username", "bcnaydin75")
+        .maybeSingle();
+
+      return NextResponse.json({
+        ...base,
+        admin_count: count ?? 0,
+        bcnaydin75: sample ?? null,
+        db_error: error?.message ?? null,
+      });
+    } catch (e) {
+      return NextResponse.json({
+        ...base,
+        ok: false,
+        db_error: e instanceof Error ? e.message : "unknown",
+      });
+    }
+  }
+
+  return NextResponse.json(base);
 }

@@ -4,7 +4,7 @@
 INSERT INTO admin_users (username, password_hash, role, aktif, must_change_password)
 VALUES (
   'bcnaydin75',
-  '$2b$10$8d0T8UENFHOyd3xDictI2O.sdnaegKssdqSrHgPjgBn5b2OHZr7xi',
+  '$2b$10$gWHO7dnX1VvhZUPycsX.9u5kHNkoN4B.SgPq/EayqzaPiRGtIhCi2',
   'admin',
   TRUE,
   FALSE
