@@ -1,23 +1,8 @@
 import type { NextConfig } from "next";
-import {
-  getApiBaseUrl,
-} from "./src/lib/normalize-api-base-url";
 
+/** API proxy: src/app/api/[...path]/route.ts ve src/app/backend/[...path]/route.ts */
 const nextConfig: NextConfig = {
   devIndicators: false,
-  async rewrites() {
-    const phpApiBase = getApiBaseUrl();
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${phpApiBase}/api/:path*`,
-      },
-      {
-        source: "/backend/:path*",
-        destination: `${phpApiBase}/:path*`,
-      },
-    ];
-  },
 };
 
 export default nextConfig;

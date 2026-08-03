@@ -496,7 +496,7 @@ export const messages = {
     },
   },
   errors: {
-    connection: "Sunucuya bağlanılamadı. Laragon'un çalıştığından emin olun.",
+    connection: "Sunucuya bağlanılamadı. API adresini ve cPanel PHP servisini kontrol edin.",
     connectionShort: "Sunucuya bağlanılamadı.",
     connectionLaragon: "Sunucuya bağlanılamadı. Laragon çalışıyor mu?",
     notFound: "Kayıt bulunamadı.",

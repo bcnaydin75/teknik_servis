@@ -5,7 +5,7 @@ Vercel'de çalışan arayüz. **PHP API ve MySQL yalnızca cPanel'de** çalış�
 ## Mimari
 
 ```
-Tarayıcı  →  Vercel (/api/* proxy)  →  cPanel PHP API  →  MySQL
+Tarayıcı  →  Vercel (/api/* Route Handler proxy)  →  cPanel PHP API  →  MySQL
 ```
 
 - Tüm `fetch` çağrıları `src/lib/api-config.ts` içindeki `apiUrl()` üzerinden gider
