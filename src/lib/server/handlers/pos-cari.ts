@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
-import { requireShopTenant } from "../tenant-context";
+import { applyTenantFilter, resolveTenantScope } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 export async function handlePos(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("pos");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
 
   if (request.method === "GET") {
-    const { data: rows } = await db
-      .from("inventory")
-      .select("id, part_name, sell_price, stock_quantity")
-      .eq("tenant_id", tenantId)
-      .gt("stock_quantity", 0)
-      .order("part_name");
+    const { data: rows } = await applyTenantFilter(
+      db
+        .from("inventory")
+        .select("id, part_name, sell_price, stock_quantity")
+        .gt("stock_quantity", 0)
+        .order("part_name"),
+      scope
+    );
 
     return jsonOk({ data: rows ?? [] });
   }
@@ -33,6 +34,7 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
     if (!items.length) return jsonFail("Sepet boş.", 400);
 
     let total = 0;
+    let tenantId: number | null = scope.mode === "shop" ? scope.tenantId : null;
     const saleItems: {
       inventory_id: number;
       part_name: string;
@@ -44,15 +46,19 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
     for (const item of items) {
       const invId = Number(item.inventory_id);
       const qty = Number(item.quantity ?? 1);
-      const { data: inv } = await db
-        .from("inventory")
-        .select("*")
-        .eq("id", invId)
-        .eq("tenant_id", tenantId)
-        .maybeSingle();
+      let invQuery = db.from("inventory").select("*").eq("id", invId);
+      if (scope.mode === "shop") {
+        invQuery = invQuery.eq("tenant_id", scope.tenantId);
+      }
+      const { data: inv } = await invQuery.maybeSingle();
 
       if (!inv || inv.stock_quantity < qty) {
         return jsonFail(`Stok yetersiz: ${inv?.part_name ?? invId}`, 400);
+      }
+
+      if (tenantId == null) tenantId = Number(inv.tenant_id);
+      else if (Number(inv.tenant_id) !== tenantId) {
+        return jsonFail("Sepetteki ürünler farklı dükkanlara ait olamaz.", 400);
       }
 
       const lineTotal = Number(inv.sell_price) * qty;
@@ -65,6 +71,8 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
         total_price: lineTotal,
       });
     }
+
+    if (!tenantId) return jsonFail("Dükkan bağlamı bulunamadı.", 400);
 
     const { data: sale, error: saleErr } = await db
       .from("pos_sales")
@@ -145,19 +153,16 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("cari");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
   const action = request.nextUrl.searchParams.get("action") ?? "";
 
   if (action === "list" && request.method === "GET") {
-    const { data: rows } = await db
-      .from("customers")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .neq("cari_bakiye", 0)
-      .order("ad_soyad");
+    const { data: rows } = await applyTenantFilter(
+      db.from("customers").select("*").neq("cari_bakiye", 0).order("ad_soyad"),
+      scope
+    );
 
     return jsonOk({ data: rows ?? [] });
   }
@@ -166,12 +171,14 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
     const q = (request.nextUrl.searchParams.get("q") ?? "").trim();
     if (!q) return jsonOk({ data: [] });
 
-    const { data: rows } = await db
-      .from("customers")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .or(`ad_soyad.ilike.%${q}%,telefon.ilike.%${q}%`)
-      .limit(20);
+    const { data: rows } = await applyTenantFilter(
+      db
+        .from("customers")
+        .select("*")
+        .or(`ad_soyad.ilike.%${q}%,telefon.ilike.%${q}%`)
+        .limit(20),
+      scope
+    );
 
     return jsonOk({ data: rows ?? [] });
   }
@@ -180,12 +187,11 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
     const customerId = Number(request.nextUrl.searchParams.get("customer_id"));
     if (!customerId) return jsonFail("Müşteri gerekli.", 400);
 
-    const { data: customer } = await db
-      .from("customers")
-      .select("*")
-      .eq("id", customerId)
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
+    let customerQuery = db.from("customers").select("*").eq("id", customerId);
+    if (scope.mode === "shop") {
+      customerQuery = customerQuery.eq("tenant_id", scope.tenantId);
+    }
+    const { data: customer } = await customerQuery.maybeSingle();
 
     if (!customer) return jsonFail("Müşteri bulunamadı.", 404);
 
@@ -212,22 +218,19 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
       return jsonFail("Geçersiz tutar.", 400);
     }
 
-    const { data: customer } = await db
-      .from("customers")
-      .select("cari_bakiye")
-      .eq("id", customerId)
-      .eq("tenant_id", tenantId)
-      .maybeSingle();
+    let customerQuery = db.from("customers").select("cari_bakiye, tenant_id").eq("id", customerId);
+    if (scope.mode === "shop") {
+      customerQuery = customerQuery.eq("tenant_id", scope.tenantId);
+    }
+    const { data: customer } = await customerQuery.maybeSingle();
 
     if (!customer) return jsonFail("Müşteri bulunamadı.", 404);
 
+    const tenantId = Number(customer.tenant_id);
     const delta = action === "borc" ? amount : -amount;
     const newBalance = Number(customer.cari_bakiye) + delta;
 
-    await db
-      .from("customers")
-      .update({ cari_bakiye: newBalance })
-      .eq("id", customerId);
+    await db.from("customers").update({ cari_bakiye: newBalance }).eq("id", customerId);
 
     await db.from("customer_transactions").insert({
       tenant_id: tenantId,

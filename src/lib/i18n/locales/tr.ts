@@ -57,6 +57,7 @@ export const messages = {
     teslim_edildi: "Teslim Edildi",
   },
   roles: {
+    developer: "Geliştirici",
     admin: "Admin",
     adminDesc: "Tam yetki",
     teknisyen: "Teknisyen",
@@ -252,6 +253,7 @@ export const messages = {
         shopAdminAdded: "Dükkan yöneticisi oluşturuldu.",
         shopAdminScopeHint: "Geliştirici hesabı dükkan işlemleri için kullanılmaz. Buradan Mehmet, Serap gibi bağımsız dükkan adminleri oluşturun. Yazdığınız firma adı, dükkan admininin Ayarlar → Firma Profili alanına otomatik gelir; admin sonradan değiştirebilir.",
         developerAccount: "Geliştirici",
+        noShopProfile: "Geliştirici hesabının dükkan profili yoktur. Dükkan yöneticileri Ayarlar → Dükkan Yöneticileri sekmesinden yönetilir.",
         companyName: "Firma Adı",
         companyNameRequired: "Firma adı zorunludur.",
         companyCol: "Firma",

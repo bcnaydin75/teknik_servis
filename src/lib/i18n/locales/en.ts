@@ -57,6 +57,7 @@ export const messages = {
     teslim_edildi: "Delivered",
   },
   roles: {
+    developer: "Developer",
     admin: "Admin",
     adminDesc: "Full access",
     teknisyen: "Technician",

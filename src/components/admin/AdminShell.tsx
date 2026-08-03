@@ -6,6 +6,7 @@ import AdminSidebar from "./AdminSidebar";
 import AdminMobileNav from "./AdminMobileNav";
 import PasswordChangeBanner from "./PasswordChangeBanner";
 import ThemeToggle from "@/components/ThemeToggle";
+import AdminUserBadge from "./AdminUserBadge";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 interface AdminShellProps {
@@ -67,7 +68,10 @@ export default function AdminShell({
                 <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
               )}
             </div>
-            <ThemeToggle />
+            <div className="flex shrink-0 items-center gap-2">
+              <AdminUserBadge compact />
+              <ThemeToggle />
+            </div>
           </div>
         </header>
 
@@ -80,7 +84,10 @@ export default function AdminShell({
                 <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
               )}
             </div>
-            {action}
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <AdminUserBadge />
+              {action}
+            </div>
           </div>
         </header>
 

@@ -71,7 +71,6 @@ export default function SettingsPage() {
       setIsSuperadmin(Boolean(authRes.data.is_superadmin));
       setCanManageStaff(Boolean(authRes.data.permissions?.manage_staff));
       if (authRes.data.is_superadmin) {
-        setTab("personel");
         setNewStaff((s) => ({ ...s, role: "admin" }));
       }
     }
@@ -181,7 +180,7 @@ export default function SettingsPage() {
   }
 
   const tabs: { id: Tab; labelKey: string }[] = [
-    ...(!isSuperadmin ? [{ id: "firma" as Tab, labelKey: "admin.settings.tabs.firma" }] : []),
+    { id: "firma", labelKey: "admin.settings.tabs.firma" },
     ...(canManageStaff
       ? [{
           id: "personel" as Tab,
@@ -192,7 +191,7 @@ export default function SettingsPage() {
       : []),
     { id: "sifre", labelKey: "admin.settings.tabs.sifre" },
     { id: "tema", labelKey: "admin.settings.tabs.tema" },
-    ...(!isSuperadmin ? [{ id: "dil" as Tab, labelKey: "admin.settings.tabs.dil" }] : []),
+    { id: "dil", labelKey: "admin.settings.tabs.dil" },
   ];
 
   const roleOptions = assignableStaffRoles(isSuperadmin);
@@ -231,7 +230,11 @@ export default function SettingsPage() {
 
       {loading ? (
         <p className="text-slate-500 dark:text-slate-400">{t("common.loading")}</p>
-      ) : tab === "firma" && shop && !isSuperadmin ? (
+      ) : tab === "firma" && isSuperadmin ? (
+        <div className="max-w-2xl rounded-2xl bg-white p-6 text-sm text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
+          {t("admin.settings.personel.noShopProfile")}
+        </div>
+      ) : tab === "firma" && shop ? (
         <form onSubmit={handleShopSave} className="max-w-2xl space-y-5 rounded-2xl bg-white p-6 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
           <div className="flex items-center gap-4">
             {shop.logo_url ? (

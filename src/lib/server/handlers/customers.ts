@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
-import { requireShopTenant } from "../tenant-context";
+import { applyTenantFilter, resolveTenantScope, withScopedId } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 export async function handleCheckCustomer(
@@ -10,14 +10,13 @@ export async function handleCheckCustomer(
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
   const telefon = (request.nextUrl.searchParams.get("telefon") ?? "").trim();
   const adSoyad = (request.nextUrl.searchParams.get("ad_soyad") ?? "").trim();
 
-  let query = db.from("customers").select("*").eq("tenant_id", tenantId);
+  let query = applyTenantFilter(db.from("customers").select("*"), scope);
 
   if (telefon) {
     query = query.eq("telefon", telefon);
@@ -64,23 +63,22 @@ export async function handleUpdateCustomer(
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
 
   const body = await request.json();
   const id = Number(body.id);
   if (!id) return jsonFail("Geçersiz müşteri.", 400);
 
   const db = getSupabaseAdmin();
-  const { error } = await db
-    .from("customers")
-    .update({
+  const { error } = await withScopedId(
+    db.from("customers").update({
       riskli_musteri: Boolean(body.riskli_musteri),
       risk_notu: (body.risk_notu ?? "").trim() || null,
-    })
-    .eq("id", id)
-    .eq("tenant_id", tenantId);
+    }),
+    scope,
+    id
+  );
 
   if (error) return jsonFail("Güncellenemedi.", 500);
   return jsonOk({ message: "Müşteri güncellendi." });

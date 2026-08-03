@@ -1,31 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
-import { requireShopTenant } from "../tenant-context";
+import {
+  applyTenantFilter,
+  resolveTenantScope,
+  requireWriteTenantId,
+} from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 export async function handleSuppliers(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("suppliers");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
 
   if (request.method === "GET") {
-    const { data: suppliers } = await db
-      .from("suppliers")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("firma_adi", { ascending: true });
+    const { data: suppliers } = await applyTenantFilter(
+      db.from("suppliers").select("*").order("firma_adi", { ascending: true }),
+      scope
+    );
 
-    const { data: txRows } = await db
-      .from("supplier_transactions")
-      .select("*, suppliers(firma_adi)")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false })
-      .limit(100);
+    const { data: txRows } = await applyTenantFilter(
+      db
+        .from("supplier_transactions")
+        .select("*, suppliers(firma_adi)")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      scope
+    );
 
     const supplierList = (suppliers ?? []).map((s) => {
       const txs = (txRows ?? []).filter((t) => t.supplier_id === s.id);
@@ -65,6 +69,10 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
   if (request.method === "POST") {
     const body = await request.json();
     const action = body.action as string;
+
+    const write = requireWriteTenantId(scope, { bodyTenantId: Number(body.tenant_id) || undefined });
+    if (!write.ok) return jsonFail(write.message, write.status);
+    const tenantId = write.tenantId;
 
     if (action === "add_supplier") {
       const firma = (body.firma_adi ?? "").trim();

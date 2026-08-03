@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requireSession } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
-import { requireShopTenant } from "../tenant-context";
+import { applyTenantFilter, resolveTenantScope, requireWriteTenantId, withScopedId } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 function parseParts(raw: unknown): string[] {
@@ -58,9 +58,8 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
   const sp = request.nextUrl.searchParams;
   const archived = sp.get("archived") === "1";
@@ -68,12 +67,14 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
   const year = parseInt(sp.get("year") ?? "0", 10);
   const month = parseInt(sp.get("month") ?? "0", 10);
 
-  let query = db
-    .from("repairs")
-    .select("*, customers!inner(*)")
-    .eq("tenant_id", tenantId)
-    .eq("arsivlendi", archived)
-    .order("guncelleme_tarihi", { ascending: false });
+  let query = applyTenantFilter(
+    db
+      .from("repairs")
+      .select("*, customers!inner(*)")
+      .eq("arsivlendi", archived)
+      .order("guncelleme_tarihi", { ascending: false }),
+    scope
+  );
 
   if (q) {
     query = query.or(
@@ -103,11 +104,10 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
     devices = stripCosts(devices);
   }
 
-  const { data: activeRows } = await db
-    .from("repairs")
-    .select("cihaz_durumu, arsivlendi")
-    .eq("tenant_id", tenantId)
-    .eq("arsivlendi", false);
+  const { data: activeRows } = await applyTenantFilter(
+    db.from("repairs").select("cihaz_durumu, arsivlendi").eq("arsivlendi", false),
+    scope
+  );
 
   const stats = {
     toplam_cihaz: activeRows?.length ?? 0,
@@ -120,11 +120,10 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
   const payload: Record<string, unknown> = { stats, devices };
 
   if (archived && !year && !month) {
-    const { data: archivedRows } = await db
-      .from("repairs")
-      .select("arsiv_tarihi")
-      .eq("tenant_id", tenantId)
-      .eq("arsivlendi", true);
+    const { data: archivedRows } = await applyTenantFilter(
+      db.from("repairs").select("arsiv_tarihi").eq("arsivlendi", true),
+      scope
+    );
 
     const periodMap = new Map<string, { year: number; month: number; count: number }>();
     for (const r of archivedRows ?? []) {
@@ -159,16 +158,17 @@ export async function handleDashboardStats(): Promise<NextResponse> {
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
 
-  const { data: repairs } = await db
-    .from("repairs")
-    .select("cihaz_durumu, arsivlendi, olusturma_tarihi")
-    .eq("tenant_id", tenantId)
-    .eq("arsivlendi", false);
+  const { data: repairs } = await applyTenantFilter(
+    db
+      .from("repairs")
+      .select("cihaz_durumu, arsivlendi, olusturma_tarihi")
+      .eq("arsivlendi", false),
+    scope
+  );
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -192,12 +192,14 @@ export async function handleDashboardStats(): Promise<NextResponse> {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const { data: posToday } = await db
-    .from("pos_sales")
-    .select("total_amount")
-    .eq("tenant_id", tenantId)
-    .gte("created_at", today.toISOString())
-    .lt("created_at", tomorrow.toISOString());
+  const { data: posToday } = await applyTenantFilter(
+    db
+      .from("pos_sales")
+      .select("total_amount")
+      .gte("created_at", today.toISOString())
+      .lt("created_at", tomorrow.toISOString()),
+    scope
+  );
 
   stats.pos_cirosu_bugun = (posToday ?? []).reduce(
     (s, r) => s + Number(r.total_amount ?? 0),
@@ -212,11 +214,36 @@ export async function handleAddDevice(request: NextRequest): Promise<NextRespons
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
   const body = await request.json();
+
+  const write = requireWriteTenantId(scope, { bodyTenantId: Number(body.tenant_id) || undefined });
+  let tenantId: number;
+  if (write.ok) {
+    tenantId = write.tenantId;
+  } else if (scope.mode === "all") {
+    const { data: owners } = await db
+      .from("admin_users")
+      .select("id, tenant_id")
+      .eq("role", "admin")
+      .eq("is_superadmin", false);
+    const shopOwners = (owners ?? []).filter((o) => o.id === o.tenant_id);
+    if (shopOwners.length === 1) {
+      tenantId = shopOwners[0].id;
+    } else {
+      return jsonFail(
+        shopOwners.length === 0
+          ? "Önce dükkan yöneticisi oluşturun."
+          : "Birden fazla dükkan var; hangi dükkana ekleneceğini belirtin (tenant_id).",
+        400
+      );
+    }
+  } else {
+    return jsonFail(write.message, write.status);
+  }
+
   const adSoyad = (body.ad_soyad ?? "").trim();
   const cihazModeli = (body.cihaz_modeli ?? "").trim();
   const telefon = (body.telefon ?? "").trim() || null;
@@ -287,23 +314,23 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
   const body = await request.json();
   const id = Number(body.id);
 
   if (!id) return jsonFail("Geçersiz cihaz.", 400);
 
-  const { data: existing } = await db
-    .from("repairs")
-    .select("*, customers(*)")
-    .eq("id", id)
-    .eq("tenant_id", tenantId)
-    .maybeSingle();
+  let fetchQuery = db.from("repairs").select("*, customers(*)").eq("id", id);
+  if (scope.mode === "shop") {
+    fetchQuery = fetchQuery.eq("tenant_id", scope.tenantId);
+  }
+  const { data: existing } = await fetchQuery.maybeSingle();
 
   if (!existing) return jsonFail("Cihaz bulunamadı.", 404);
+
+  const tenantId = Number(existing.tenant_id);
 
   const oldParts = parseParts(existing.degisen_parcalar);
   const newPartNames: string[] = Array.isArray(body.degisen_parcalar)
@@ -339,9 +366,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
 
   const newStatus = body.cihaz_durumu ?? existing.cihaz_durumu;
 
-  const { error } = await db
-    .from("repairs")
-    .update({
+  const { error } = await withScopedId(db.from("repairs").update({
       cihaz_durumu: newStatus,
       degisen_parcalar: newPartNames,
       parca_ucreti: Number(body.parca_ucreti ?? existing.parca_ucreti),
@@ -351,9 +376,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
       imei_no: body.imei_no ?? existing.imei_no,
       cihaz_sifresi: body.cihaz_sifresi ?? existing.cihaz_sifresi,
       guncelleme_tarihi: new Date().toISOString(),
-    })
-    .eq("id", id)
-    .eq("tenant_id", tenantId);
+    }), scope, id);
 
   if (error) return jsonFail("Güncellenemedi.", 500);
 
@@ -397,9 +420,8 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
   const body = await request.json();
   const id = Number(body.id);
@@ -408,31 +430,27 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
   if (!id) return jsonFail("Geçersiz cihaz.", 400);
 
   if (action === "archive") {
-    const { error } = await db
-      .from("repairs")
-      .update({ arsivlendi: true, arsiv_tarihi: new Date().toISOString() })
-      .eq("id", id)
-      .eq("tenant_id", tenantId);
+    const { error } = await withScopedId(
+      db.from("repairs").update({ arsivlendi: true, arsiv_tarihi: new Date().toISOString() }),
+      scope,
+      id
+    );
     if (error) return jsonFail("Arşivlenemedi.", 500);
     return jsonOk({ message: "Cihaz arşivlendi." });
   }
 
   if (action === "restore") {
-    const { error } = await db
-      .from("repairs")
-      .update({ arsivlendi: false, arsiv_tarihi: null })
-      .eq("id", id)
-      .eq("tenant_id", tenantId);
+    const { error } = await withScopedId(
+      db.from("repairs").update({ arsivlendi: false, arsiv_tarihi: null }),
+      scope,
+      id
+    );
     if (error) return jsonFail("Geri yüklenemedi.", 500);
     return jsonOk({ message: "Cihaz geri yüklendi." });
   }
 
   if (action === "permanent_delete") {
-    const { error } = await db
-      .from("repairs")
-      .delete()
-      .eq("id", id)
-      .eq("tenant_id", tenantId);
+    const { error } = await withScopedId(db.from("repairs").delete(), scope, id);
     if (error) return jsonFail("Silinemedi.", 500);
     return jsonOk({ message: "Cihaz kalıcı olarak silindi." });
   }

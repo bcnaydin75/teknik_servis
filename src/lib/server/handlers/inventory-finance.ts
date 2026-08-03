@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
-import { requireShopTenant } from "../tenant-context";
+import {
+  applyTenantFilter,
+  resolveTenantScope,
+  requireWriteTenantId,
+  withScopedId,
+} from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 export async function handleInventory(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("inventory");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
 
   if (request.method === "GET") {
-    const { data: rows } = await db
-      .from("inventory")
-      .select("*, suppliers(firma_adi)")
-      .eq("tenant_id", tenantId)
-      .order("part_name", { ascending: true });
+    const { data: rows } = await applyTenantFilter(
+      db.from("inventory").select("*, suppliers(firma_adi)").order("part_name", { ascending: true }),
+      scope
+    );
 
     const items = (rows ?? []).map((r) => ({
       id: r.id,
@@ -49,18 +52,21 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
     if (!payload.part_name) return jsonFail("Parça adı zorunludur.", 400);
 
     if (action === "update" && body.id) {
-      const { error } = await db
-        .from("inventory")
-        .update(payload)
-        .eq("id", Number(body.id))
-        .eq("tenant_id", tenantId);
+      const { error } = await withScopedId(
+        db.from("inventory").update(payload),
+        scope,
+        Number(body.id)
+      );
       if (error) return jsonFail("Kaydedilemedi.", 500);
       return jsonOk({ message: "Stok güncellendi." });
     }
 
+    const write = requireWriteTenantId(scope, { bodyTenantId: Number(body.tenant_id) || undefined });
+    if (!write.ok) return jsonFail(write.message, write.status);
+
     const { error } = await db.from("inventory").insert({
       ...payload,
-      tenant_id: tenantId,
+      tenant_id: write.tenantId,
     });
     if (error) return jsonFail("Kaydedilemedi.", 500);
     return jsonOk({ message: "Stok eklendi." });
@@ -73,17 +79,14 @@ export async function handleFinance(): Promise<NextResponse> {
   const auth = await requirePermission("finance");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const shop = requireShopTenant(auth.user);
-  if (!shop.ok) return jsonFail(shop.message, shop.status);
-  const tenantId = shop.tenantId;
+  const scope = resolveTenantScope(auth.user);
+  if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
 
-  const { data: rows } = await db
-    .from("transactions")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const { data: rows } = await applyTenantFilter(
+    db.from("transactions").select("*").order("created_at", { ascending: false }).limit(200),
+    scope
+  );
 
   const transactions = (rows ?? []).map((r) => ({
     id: r.id,
