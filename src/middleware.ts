@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { apiUrlFromOrigin } from "@/lib/api-config";
 
 const ROUTE_PERMS: Record<string, string> = {
   "/admin/inventory": "inventory",
@@ -10,6 +9,11 @@ const ROUTE_PERMS: Record<string, string> = {
   "/admin/cari": "cari",
   "/admin/settings": "settings",
 };
+
+function apiUrlFromOrigin(path: string, origin: string): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return new URL(normalized, origin).href;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -24,7 +28,17 @@ export async function middleware(request: NextRequest) {
 
     try {
       const res = await fetch(meUrl, { headers: { cookie }, cache: "no-store" });
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(`Auth check failed: ${res.status}`);
+      }
+
+      const text = await res.text();
+      let data: { success?: boolean; data?: { permissions?: Record<string, boolean> } };
+      try {
+        data = JSON.parse(text) as typeof data;
+      } catch {
+        throw new Error("Auth check returned invalid JSON");
+      }
 
       if (!data.success) {
         const loginUrl = new URL("/admin/login", request.url);

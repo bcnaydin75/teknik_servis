@@ -1,11 +1,17 @@
 import type { NextConfig } from "next";
-import { getApiBaseUrl } from "./src/lib/api-config";
+
+const CPANEL_API_BASE_URL =
+  "http://loyal-brown-emu.89-252-180-227.cpanel.site";
+
+function getApiBaseUrl(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  return CPANEL_API_BASE_URL;
+}
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  allowedDevOrigins: ["192.168.1.85"],
   async rewrites() {
-    /** Vercel / yerel Next → cPanel (veya Laragon) PHP; MySQL yalnızca PHP tarafında */
     const phpApiBase = getApiBaseUrl();
     return [
       {

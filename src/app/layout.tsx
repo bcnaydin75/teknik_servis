@@ -20,6 +20,9 @@ export const viewport: Viewport = {
   themeColor: "#0f172a",
 };
 
+/** Build sırasında API'ye bağlanılmaz; sayfalar istek anında render edilir */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Teknik Servis | Cihaz Durumu Sorgulama",
   description:
