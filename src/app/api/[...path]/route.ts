@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/normalize-api-base-url";
 import { nextResponseFromUpstream } from "@/lib/proxy-response";
+import { handleNativeApi } from "@/lib/server/native-api";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -78,6 +79,11 @@ type RouteContext = { params: Promise<{ path: string[] }> };
 
 async function handle(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
+  const joined = path.join("/");
+
+  const native = await handleNativeApi(request, joined);
+  if (native) return native;
+
   return proxyToBackend(request, path, "/api/");
 }
 

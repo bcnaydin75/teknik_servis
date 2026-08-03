@@ -5,6 +5,7 @@ import { apiUrl } from "@/lib/api-config";
 import { apiHeaders } from "@/lib/api-locale";
 import { apiFallback } from "@/lib/i18n/api-fallback";
 import { normalizeShopSettings } from "@/lib/normalize-shop-settings";
+import { withShopParam } from "@/lib/tenant-slug";
 
 const fetchOpts: RequestInit = { credentials: "include" };
 
@@ -108,7 +109,7 @@ export async function changePassword(oldPassword: string, newPassword: string): 
 
 export async function fetchPublicSettings(): Promise<{ success: boolean; data?: ShopSettings }> {
   try {
-    const res = await fetch(apiUrl("/api/public_settings.php?action=profile"), {
+    const res = await fetch(withShopParam(new URL(apiUrl("/api/public_settings.php?action=profile"))).href, {
       headers: apiHeaders(),
       cache: "no-store",
     });
