@@ -1,21 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/normalize-api-base-url";
+import { nextResponseFromUpstream } from "@/lib/proxy-response";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const HOP_BY_HOP = new Set([
-  "connection",
-  "keep-alive",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailers",
-  "transfer-encoding",
-  "upgrade",
-  "host",
-  "content-length",
-]);
 
 const FORWARD_REQUEST_HEADERS = new Set([
   "accept",
@@ -76,17 +64,7 @@ async function proxyToBackend(
       console.error("[api-proxy] upstream error:", targetUrl, upstream.status);
     }
 
-    const responseHeaders = new Headers();
-    upstream.headers.forEach((value, key) => {
-      if (!HOP_BY_HOP.has(key.toLowerCase())) {
-        responseHeaders.append(key, value);
-      }
-    });
-
-    return new NextResponse(upstream.body, {
-      status: upstream.status,
-      headers: responseHeaders,
-    });
+    return nextResponseFromUpstream(upstream);
   } catch (error) {
     console.error("[api-proxy] upstream failed:", targetUrl, error);
     return NextResponse.json(
