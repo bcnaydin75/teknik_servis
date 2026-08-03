@@ -17,6 +17,9 @@ const REMEMBER_USERNAME_KEY = "admin_login_remember_username";
 const LOGIN_FAILURES_KEY = "admin_login_failures";
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
+/** Varsayılan kapalı; production'da açmak için NEXT_PUBLIC_ENABLE_LOGIN_LOCKOUT=true */
+const LOGIN_LOCKOUT_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_LOGIN_LOCKOUT === "true";
 
 type FailureRecord = {
   count: number;
@@ -24,6 +27,7 @@ type FailureRecord = {
 };
 
 function readFailures(): FailureRecord {
+  if (!LOGIN_LOCKOUT_ENABLED) return { count: 0 };
   try {
     const raw = localStorage.getItem(LOGIN_FAILURES_KEY);
     if (!raw) return { count: 0 };
@@ -38,6 +42,7 @@ function readFailures(): FailureRecord {
 }
 
 function recordFailure(): FailureRecord {
+  if (!LOGIN_LOCKOUT_ENABLED) return { count: 0 };
   const current = readFailures();
   const count = current.count + 1;
   const next: FailureRecord =
@@ -61,6 +66,7 @@ function clearFailures() {
 }
 
 function isLockedOut(): boolean {
+  if (!LOGIN_LOCKOUT_ENABLED) return false;
   const record = readFailures();
   return Boolean(record.lockedUntil && Date.now() < record.lockedUntil);
 }
