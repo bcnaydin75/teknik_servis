@@ -21,7 +21,11 @@ Tarayıcı  →  Vercel (/api/* Route Handler proxy)  →  cPanel PHP API  →  
 |----------|--------|
 | `NEXT_PUBLIC_API_URL` | `http://loyal-brown-emu.89-252-180-227.cpanel.site` |
 
-**Önemli:** Değer mutlaka `http://` veya `https://` ile başlamalı. Tırnak veya sondaki `/` kullanma.
+**Önemli:** cPanel geçici domain için **`http://`** kullanın (https çalışmaz, 502 verir):
+
+```
+NEXT_PUBLIC_API_URL=http://loyal-brown-emu.89-252-180-227.cpanel.site
+```
 
 3. **Redeploy** (env değişince mutlaka yeniden deploy)
 

@@ -22,22 +22,15 @@ async function proxyToBackend(
   pathSegments: string[]
 ): Promise<NextResponse> {
   const apiBase = getApiBaseUrl();
-  const joined = pathSegments.map(encodeURIComponent).join("/");
+  const joined = pathSegments.join("/");
   const url = new URL(`${apiBase}/${joined}`);
   url.search = request.nextUrl.search;
 
-  const headers = new Headers();
-  request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
-      headers.set(key, value);
-    }
-  });
-
   const init: RequestInit = {
     method: request.method,
-    headers,
+    headers: new Headers({ accept: "*/*", "user-agent": "TeknikServis-Vercel-Proxy/1.0" }),
     cache: "no-store",
-    redirect: "manual",
+    redirect: "follow",
   };
 
   if (request.method !== "GET" && request.method !== "HEAD") {

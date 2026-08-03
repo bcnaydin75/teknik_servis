@@ -17,12 +17,38 @@ const HOP_BY_HOP = new Set([
   "content-length",
 ]);
 
+const FORWARD_REQUEST_HEADERS = new Set([
+  "accept",
+  "accept-language",
+  "content-type",
+  "cookie",
+  "authorization",
+  "x-locale",
+]);
+
 function buildTargetUrl(basePath: string, pathSegments: string[], search: string): string {
   const apiBase = getApiBaseUrl();
-  const joined = pathSegments.map(encodeURIComponent).join("/");
+  const joined = pathSegments.join("/");
   const url = new URL(`${apiBase}${basePath}${joined}`);
   url.search = search;
   return url.toString();
+}
+
+function pickRequestHeaders(request: NextRequest): Headers {
+  const headers = new Headers();
+  request.headers.forEach((value, key) => {
+    const lower = key.toLowerCase();
+    if (FORWARD_REQUEST_HEADERS.has(lower)) {
+      headers.set(key, value);
+    }
+  });
+  if (!headers.has("accept")) {
+    headers.set("accept", "application/json, text/plain, */*");
+  }
+  if (!headers.has("user-agent")) {
+    headers.set("user-agent", "TeknikServis-Vercel-Proxy/1.0");
+  }
+  return headers;
 }
 
 async function proxyToBackend(
@@ -32,18 +58,11 @@ async function proxyToBackend(
 ): Promise<NextResponse> {
   const targetUrl = buildTargetUrl(basePath, pathSegments, request.nextUrl.search);
 
-  const headers = new Headers();
-  request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
-      headers.set(key, value);
-    }
-  });
-
   const init: RequestInit = {
     method: request.method,
-    headers,
+    headers: pickRequestHeaders(request),
     cache: "no-store",
-    redirect: "manual",
+    redirect: "follow",
   };
 
   if (request.method !== "GET" && request.method !== "HEAD") {
@@ -52,6 +71,11 @@ async function proxyToBackend(
 
   try {
     const upstream = await fetch(targetUrl, init);
+
+    if (!upstream.ok && upstream.status >= 500) {
+      console.error("[api-proxy] upstream error:", targetUrl, upstream.status);
+    }
+
     const responseHeaders = new Headers();
     upstream.headers.forEach((value, key) => {
       if (!HOP_BY_HOP.has(key.toLowerCase())) {
