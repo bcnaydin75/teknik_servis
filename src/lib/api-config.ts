@@ -1,9 +1,11 @@
-/**
- * cPanel PHP API (production).
- * Vercel'de Environment Variable ile override edilebilir: NEXT_PUBLIC_API_URL
- */
-export const CPANEL_API_BASE_URL =
-  "http://loyal-brown-emu.89-252-180-227.cpanel.site";
+import {
+  CPANEL_API_BASE_URL,
+  getApiBaseUrl,
+  normalizeApiBaseUrl,
+} from "./normalize-api-base-url";
+
+/** @deprecated normalize-api-base-url modülünü kullanın */
+export { CPANEL_API_BASE_URL, normalizeApiBaseUrl };
 
 /** Yerel Laragon geliştirme */
 export const LOCAL_API_BASE_URL =
@@ -15,11 +17,7 @@ export const DEFAULT_API_BASE_URL = CPANEL_API_BASE_URL;
 /** Frontend kök adresi (takip linkleri için) */
 export const DEFAULT_APP_URL = "http://localhost:3000";
 
-export function getApiBaseUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  return DEFAULT_API_BASE_URL;
-}
+export { getApiBaseUrl };
 
 /**
  * Tarayıcı istekleri same-origin /api proxy üzerinden gider (Vercel rewrite → cPanel PHP).
