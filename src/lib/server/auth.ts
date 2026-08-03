@@ -1,56 +1,16 @@
 import bcrypt from "bcryptjs";
 import type { Permissions } from "@/lib/permissions";
+import { isAccountOwner, type StaffRole } from "@/lib/permissions";
 import { getSupabaseAdmin } from "./supabase";
 import type { SessionData } from "./session";
 import { getSessionFromCookies } from "./session";
+import {
+  buildUserPermissions,
+  getRolePermissions,
+  isTenantOwnerUser,
+} from "./role-permissions";
 
-export function getRolePermissions(role: string): Permissions {
-  const none: Permissions = {
-    dashboard: false,
-    inventory: false,
-    suppliers: false,
-    finance: false,
-    pos: false,
-    cari: false,
-    settings: false,
-    see_costs: false,
-    see_finance: false,
-  };
-
-  const all: Permissions = {
-    dashboard: true,
-    inventory: true,
-    suppliers: true,
-    finance: true,
-    pos: true,
-    cari: true,
-    settings: true,
-    see_costs: true,
-    see_finance: true,
-  };
-
-  switch (role) {
-    case "admin":
-      return all;
-    case "teknisyen":
-      return {
-        ...none,
-        dashboard: true,
-        inventory: true,
-      };
-    case "kasa":
-      return {
-        ...none,
-        dashboard: true,
-        finance: true,
-        pos: true,
-        cari: true,
-        see_finance: true,
-      };
-    default:
-      return none;
-  }
-}
+export { getRolePermissions, isTenantOwnerUser };
 
 export interface AdminUserRow {
   id: number;
@@ -102,8 +62,8 @@ export async function getCurrentUserPayload(userId: number) {
     ad_soyad: user.ad_soyad,
     must_change_password: user.must_change_password,
     tenant_id: tenantId,
-    is_account_owner: tenantId === user.id,
-    permissions: getRolePermissions(role),
+    is_account_owner: isAccountOwner({ id: user.id, tenant_id: tenantId }),
+    permissions: buildUserPermissions(role, user.id, tenantId),
   };
 }
 
@@ -145,6 +105,31 @@ export async function verifyPassword(
     return bcrypt.compare(password, hash.replace("$2y$", "$2a$"));
   }
   return bcrypt.compare(password, hash);
+}
+
+export async function requireManageStaff(): Promise<
+  | { ok: true; session: SessionData; user: NonNullable<Awaited<ReturnType<typeof getCurrentUserPayload>>> }
+  | { ok: false; status: number; message: string }
+> {
+  const auth = await requireSession();
+  if (!auth) {
+    return { ok: false, status: 401, message: "Oturum gerekli." };
+  }
+
+  if (!auth.user.permissions.manage_staff) {
+    return { ok: false, status: 403, message: "Personel yönetimi yetkiniz yok." };
+  }
+
+  return { ok: true, ...auth };
+}
+
+export function canAssignStaffRole(
+  isOwner: boolean,
+  role: string
+): role is StaffRole {
+  if (!["admin", "teknisyen", "kasa"].includes(role)) return false;
+  if (isOwner) return true;
+  return role === "teknisyen" || role === "kasa";
 }
 
 export async function hashPassword(password: string): Promise<string> {

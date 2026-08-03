@@ -15,6 +15,7 @@ import {
   uploadLogo,
 } from "@/lib/settings-api";
 import { checkAuth } from "@/lib/auth-api";
+import { assignableStaffRoles } from "@/lib/permissions";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { LOCALES, normalizeLocale, type Locale } from "@/lib/i18n/config";
 import PasswordInput from "./PasswordInput";
@@ -46,15 +47,25 @@ export default function SettingsPage() {
   const [newStaff, setNewStaff] = useState({ username: "", password: "", role: "teknisyen", ad_soyad: "" });
   const [pwdForm, setPwdForm] = useState({ old: "", new: "", confirm: "" });
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [isAccountOwner, setIsAccountOwner] = useState(false);
+  const [canManageStaff, setCanManageStaff] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [shopRes, staffRes, authRes] = await Promise.all([fetchShopSettings(), fetchStaff(), checkAuth()]);
+    const [shopRes, staffRes, authRes] = await Promise.all([
+      fetchShopSettings(),
+      fetchStaff(),
+      checkAuth(),
+    ]);
     if (shopRes.success && shopRes.data) setShop(shopRes.data);
+    if (authRes.success && authRes.data) {
+      setCurrentUserId(authRes.data.id ?? null);
+      setIsAccountOwner(Boolean(authRes.data.is_account_owner));
+      setCanManageStaff(Boolean(authRes.data.permissions?.manage_staff));
+    }
     if (staffRes.success && staffRes.data) setStaff(staffRes.data);
-    if (authRes.success && authRes.data?.id) setCurrentUserId(authRes.data.id);
     setLoading(false);
   }, []);
 
@@ -146,11 +157,13 @@ export default function SettingsPage() {
 
   const tabs: { id: Tab; labelKey: string }[] = [
     { id: "firma", labelKey: "admin.settings.tabs.firma" },
-    { id: "personel", labelKey: "admin.settings.tabs.personel" },
+    ...(canManageStaff ? [{ id: "personel" as Tab, labelKey: "admin.settings.tabs.personel" }] : []),
     { id: "sifre", labelKey: "admin.settings.tabs.sifre" },
     { id: "tema", labelKey: "admin.settings.tabs.tema" },
     { id: "dil", labelKey: "admin.settings.tabs.dil" },
   ];
+
+  const roleOptions = assignableStaffRoles(isAccountOwner);
 
   const currentLocale = normalizeLocale(shop?.default_locale ?? locale);
 
@@ -254,6 +267,7 @@ export default function SettingsPage() {
         <div className="space-y-6">
           <form onSubmit={handleAddStaff} className="max-w-2xl space-y-4 rounded-2xl bg-white p-6 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
             <h3 className="font-semibold text-slate-900 dark:text-white">{t("admin.settings.personel.newStaff")}</h3>
+            <p className="text-xs text-slate-500">{t("admin.settings.personel.staffScopeHint")}</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <input value={newStaff.ad_soyad} onChange={(e) => setNewStaff({ ...newStaff, ad_soyad: e.target.value })} placeholder={t("admin.settings.personel.fullName")} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
               <input value={newStaff.username} onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })} placeholder={t("admin.settings.personel.username")} required className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
@@ -264,7 +278,9 @@ export default function SettingsPage() {
                 required
               />
               <select value={newStaff.role} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                <option value="admin">{t("roles.admin")} — {t("roles.adminDesc")}</option>
+                {roleOptions.includes("admin") && (
+                  <option value="admin">{t("roles.admin")} — {t("roles.adminDesc")}</option>
+                )}
                 <option value="teknisyen">{t("roles.teknisyen")} — {t("roles.teknisyenDesc")}</option>
                 <option value="kasa">{t("roles.kasa")} — {t("roles.kasaDesc")}</option>
               </select>
@@ -281,10 +297,17 @@ export default function SettingsPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-medium text-slate-900 dark:text-white">{s.ad_soyad ?? t("common.dash")}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">
+                      {s.ad_soyad ?? t("common.dash")}
+                      {s.is_account_owner && (
+                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                          {t("admin.settings.personel.accountOwner")}
+                        </span>
+                      )}
+                    </p>
                     <p className="font-mono text-sm text-slate-500 dark:text-slate-400">{s.username}</p>
                   </div>
-                  {s.id === currentUserId ? (
+                  {s.id === currentUserId || s.is_account_owner ? (
                     <span className="text-xs text-slate-400">{t("common.you")}</span>
                   ) : (
                     <button
@@ -302,10 +325,12 @@ export default function SettingsPage() {
                     await updateStaff({ id: s.id, role: e.target.value, ad_soyad: s.ad_soyad, aktif: true });
                     load();
                   }}
-                  disabled={s.id === currentUserId}
+                  disabled={s.id === currentUserId || s.is_account_owner || (!isAccountOwner && s.role === "admin")}
                   className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                 >
-                  <option value="admin">{t("roles.admin")}</option>
+                  {(isAccountOwner || s.role === "admin") && (
+                    <option value="admin">{t("roles.admin")}</option>
+                  )}
                   <option value="teknisyen">{t("roles.teknisyen")}</option>
                   <option value="kasa">{t("roles.kasa")}</option>
                 </select>
@@ -326,7 +351,14 @@ export default function SettingsPage() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {staff.map((s) => (
                   <tr key={s.id} className="dark:hover:bg-slate-700/40">
-                    <td className="px-4 py-3 text-slate-900 dark:text-white">{s.ad_soyad ?? t("common.dash")}</td>
+                    <td className="px-4 py-3 text-slate-900 dark:text-white">
+                      {s.ad_soyad ?? t("common.dash")}
+                      {s.is_account_owner && (
+                        <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                          {t("admin.settings.personel.accountOwner")}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-300">{s.username}</td>
                     <td className="px-4 py-3">
                       <select
@@ -335,17 +367,19 @@ export default function SettingsPage() {
                           await updateStaff({ id: s.id, role: e.target.value, ad_soyad: s.ad_soyad, aktif: true });
                           load();
                         }}
-                        disabled={s.id === currentUserId}
+                        disabled={s.id === currentUserId || s.is_account_owner || (!isAccountOwner && s.role === "admin")}
                         className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                       >
-                        <option value="admin">{t("roles.admin")}</option>
+                        {(isAccountOwner || s.role === "admin") && (
+                          <option value="admin">{t("roles.admin")}</option>
+                        )}
                         <option value="teknisyen">{t("roles.teknisyen")}</option>
                         <option value="kasa">{t("roles.kasa")}</option>
                       </select>
                     </td>
                     <td className="px-4 py-3">
-                      {s.id === currentUserId ? (
-                        <span className="text-xs text-slate-400">{t("common.you")}</span>
+                      {s.id === currentUserId || s.is_account_owner ? (
+                        <span className="text-xs text-slate-400">{s.is_account_owner ? t("admin.settings.personel.accountOwner") : t("common.you")}</span>
                       ) : (
                         <button
                           type="button"

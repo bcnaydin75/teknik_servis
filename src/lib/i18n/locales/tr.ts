@@ -244,6 +244,8 @@ export const messages = {
         password: "Şifrenizi giriniz",
         addStaff: "Personel Ekle",
         staffAdded: "Personel eklendi.",
+        staffScopeHint: "Tüm personel aynı dükkan verisini görür (müşteri, cihaz, stok). Hesap sahibi (bcnaydin75) her rolü atayabilir; admin personeli yalnızca teknisyen ve kasa ekleyebilir. Teknisyen ve kasa personel oluşturamaz.",
+        accountOwner: "Hesap sahibi",
         addFailed: "Eklenemedi.",
         nameCol: "Ad",
         userCol: "Kullanıcı",

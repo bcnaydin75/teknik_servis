@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validatePassword } from "@/lib/password";
 import {
+  canAssignStaffRole,
   hashPassword,
+  isTenantOwnerUser,
+  requireManageStaff,
   requirePermission,
   requireSession,
   verifyPassword,
@@ -108,13 +111,13 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
   }
 
   if (action === "staff" && request.method === "GET") {
-    const auth = await requirePermission("settings");
+    const auth = await requireManageStaff();
     if (!auth.ok) return jsonFail(auth.message, auth.status);
 
     const { data: rows } = await db
       .from("admin_users")
       .select("id, username, role, ad_soyad, aktif, olusturma_tarihi, tenant_id")
-      .or(`tenant_id.eq.${auth.user.tenant_id},id.eq.${auth.user.tenant_id}`)
+      .eq("tenant_id", auth.user.tenant_id)
       .order("id", { ascending: true });
 
     const staff = (rows ?? []).map((r) => ({
@@ -124,13 +127,14 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
       ad_soyad: r.ad_soyad,
       aktif: Boolean(r.aktif),
       olusturma_tarihi: r.olusturma_tarihi,
+      is_account_owner: isTenantOwnerUser(r.id, auth.user.tenant_id),
     }));
 
     return jsonOk({ data: staff });
   }
 
   if (action === "staff_add" && request.method === "POST") {
-    const auth = await requirePermission("settings");
+    const auth = await requireManageStaff();
     if (!auth.ok) return jsonFail(auth.message, auth.status);
 
     const body = await request.json();
@@ -146,8 +150,13 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     const pwdErr = validatePassword(password);
     if (pwdErr) return jsonFail(pwdErr, 400);
 
-    if (!["admin", "teknisyen", "kasa"].includes(role)) {
-      return jsonFail("Geçersiz rol.", 400);
+    if (!canAssignStaffRole(auth.user.is_account_owner, role)) {
+      return jsonFail(
+        auth.user.is_account_owner
+          ? "Geçersiz rol."
+          : "Yalnızca hesap sahibi admin rolü atayabilir. Teknisyen veya kasa seçin.",
+        403
+      );
     }
 
     const { error } = await db.from("admin_users").insert({
@@ -167,15 +176,42 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
   }
 
   if (action === "staff_update" && request.method === "POST") {
-    const auth = await requirePermission("settings");
+    const auth = await requireManageStaff();
     if (!auth.ok) return jsonFail(auth.message, auth.status);
 
     const body = await request.json();
     const id = Number(body.id);
     if (!id) return jsonFail("Geçersiz personel.", 400);
 
+    const { data: target } = await db
+      .from("admin_users")
+      .select("id, role, tenant_id")
+      .eq("id", id)
+      .eq("tenant_id", auth.user.tenant_id)
+      .maybeSingle();
+
+    if (!target) return jsonFail("Personel bulunamadı.", 404);
+
+    if (isTenantOwnerUser(target.id, auth.user.tenant_id) && id !== auth.user.id) {
+      if (!auth.user.is_account_owner) {
+        return jsonFail("Hesap sahibi yalnızca kendi tarafından düzenlenebilir.", 403);
+      }
+    }
+
+    const newRole = String(body.role ?? target.role);
+    if (!canAssignStaffRole(auth.user.is_account_owner, newRole)) {
+      return jsonFail("Bu rolü atama yetkiniz yok.", 403);
+    }
+
+    if (
+      isTenantOwnerUser(target.id, auth.user.tenant_id) &&
+      newRole !== "admin"
+    ) {
+      return jsonFail("Hesap sahibinin rolü değiştirilemez.", 400);
+    }
+
     const update: Record<string, unknown> = {
-      role: body.role,
+      role: newRole,
       ad_soyad: (body.ad_soyad ?? "").trim() || null,
       aktif: body.aktif !== undefined ? Boolean(body.aktif) : true,
     };
@@ -198,7 +234,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
   }
 
   if (action === "staff_delete" && request.method === "POST") {
-    const auth = await requirePermission("settings");
+    const auth = await requireManageStaff();
     if (!auth.ok) return jsonFail(auth.message, auth.status);
 
     const body = await request.json();
@@ -217,15 +253,12 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
 
     if (!target) return jsonFail("Personel bulunamadı.", 404);
 
-    if (target.role === "admin") {
-      const { count } = await db
-        .from("admin_users")
-        .select("*", { count: "exact", head: true })
-        .eq("tenant_id", auth.user.tenant_id)
-        .eq("role", "admin");
-      if ((count ?? 0) <= 1) {
-        return jsonFail("Son admin kullanıcı silinemez.", 400);
-      }
+    if (isTenantOwnerUser(target.id, auth.user.tenant_id)) {
+      return jsonFail("Hesap sahibi silinemez.", 400);
+    }
+
+    if (target.role === "admin" && !auth.user.is_account_owner) {
+      return jsonFail("Admin personeli yalnızca hesap sahibi silebilir.", 403);
     }
 
     await db.from("admin_users").delete().eq("id", id);

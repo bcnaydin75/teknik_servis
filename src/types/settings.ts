@@ -16,6 +16,7 @@ export interface StaffMember {
   ad_soyad: string | null;
   aktif: boolean;
   olusturma_tarihi: string;
+  is_account_owner?: boolean;
 }
 
 export interface PosItem {

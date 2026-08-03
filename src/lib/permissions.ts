@@ -6,6 +6,8 @@ export interface Permissions {
   pos: boolean;
   cari: boolean;
   settings: boolean;
+  /** Personel ekleme/düzenleme (hesap sahibi + admin) */
+  manage_staff: boolean;
   see_costs: boolean;
   see_finance: boolean;
 }
@@ -18,6 +20,7 @@ export const DEFAULT_PERMISSIONS: Permissions = {
   pos: true,
   cari: true,
   settings: true,
+  manage_staff: true,
   see_costs: true,
   see_finance: true,
 };
@@ -27,6 +30,17 @@ export const ROLE_LABELS: Record<string, string> = {
   teknisyen: "Teknisyen",
   kasa: "Kasa",
 };
+
+export type StaffRole = "admin" | "teknisyen" | "kasa";
+
+export function isAccountOwner(user: { id: number; tenant_id: number }): boolean {
+  return user.tenant_id === user.id;
+}
+
+/** Hesap sahibi tüm rolleri atayabilir; admin personeli yalnızca teknisyen/kasa ekleyebilir */
+export function assignableStaffRoles(isOwner: boolean): StaffRole[] {
+  return isOwner ? ["admin", "teknisyen", "kasa"] : ["teknisyen", "kasa"];
+}
 
 export function canAccessRoute(pathname: string, perms: Permissions): boolean {
   if (pathname.startsWith("/admin/login")) return true;
