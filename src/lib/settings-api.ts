@@ -67,6 +67,7 @@ export async function addStaff(payload: {
   password: string;
   role: string;
   ad_soyad?: string;
+  firma_adi?: string;
 }): Promise<{ success: boolean; message?: string }> {
   const res = await fetch(apiUrl("/api/settings.php?action=staff_add"), {
     ...fetchOpts,

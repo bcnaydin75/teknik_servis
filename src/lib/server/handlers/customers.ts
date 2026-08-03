@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
+import { requireShopTenant } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 export async function handleCheckCustomer(
@@ -9,7 +10,9 @@ export async function handleCheckCustomer(
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const tenantId = auth.user.tenant_id;
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
   const db = getSupabaseAdmin();
   const telefon = (request.nextUrl.searchParams.get("telefon") ?? "").trim();
   const adSoyad = (request.nextUrl.searchParams.get("ad_soyad") ?? "").trim();
@@ -61,6 +64,10 @@ export async function handleUpdateCustomer(
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
+
   const body = await request.json();
   const id = Number(body.id);
   if (!id) return jsonFail("Geçersiz müşteri.", 400);
@@ -73,7 +80,7 @@ export async function handleUpdateCustomer(
       risk_notu: (body.risk_notu ?? "").trim() || null,
     })
     .eq("id", id)
-    .eq("tenant_id", auth.user.tenant_id);
+    .eq("tenant_id", tenantId);
 
   if (error) return jsonFail("Güncellenemedi.", 500);
   return jsonOk({ message: "Müşteri güncellendi." });

@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const [devices, setDevices] = useState<DeviceListItem[]>([]);
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [showPosStats, setShowPosStats] = useState(true);
+  const [canSeeCosts, setCanSeeCosts] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
       const perms = authRes.data?.permissions as Permissions | undefined;
       const canSeePos = Boolean(perms?.pos || perms?.see_finance);
       setShowPosStats(canSeePos);
+      setCanSeeCosts(Boolean(perms?.see_costs));
 
       const [devicesRes, statsRes] = await Promise.all([
         fetchDevices({ q: q || undefined }),
@@ -202,6 +204,7 @@ export default function AdminDashboard() {
                 devices={devices}
                 onEdit={setEditDevice}
                 onArchive={setArchiveTarget}
+                showCosts={canSeeCosts}
               />
             )}
           </section>
@@ -218,6 +221,7 @@ export default function AdminDashboard() {
         device={editDevice}
         onClose={() => setEditDevice(null)}
         onSuccess={handleEditSuccess}
+        canSeeCosts={canSeeCosts}
       />
 
       {archiveTarget && (

@@ -20,13 +20,16 @@ export interface AdminUserRow {
   aktif: boolean;
   must_change_password: boolean;
   tenant_id: number | null;
+  is_superadmin: boolean;
 }
 
 export async function loadAdminUser(userId: number): Promise<AdminUserRow | null> {
   const db = getSupabaseAdmin();
   const { data, error } = await db
     .from("admin_users")
-    .select("id, username, role, ad_soyad, aktif, must_change_password, tenant_id")
+    .select(
+      "id, username, role, ad_soyad, aktif, must_change_password, tenant_id, is_superadmin"
+    )
     .eq("id", userId)
     .maybeSingle();
 
@@ -40,19 +43,28 @@ export async function loadAdminUser(userId: number): Promise<AdminUserRow | null
     aktif: Boolean(data.aktif),
     must_change_password: Boolean(data.must_change_password),
     tenant_id: data.tenant_id,
+    is_superadmin: Boolean(data.is_superadmin),
   };
 }
 
-export function resolveTenantId(user: AdminUserRow): number {
+/** JWT oturumu için tenant; superadmin = 0 */
+export function resolveSessionTenantId(user: AdminUserRow): number {
+  if (user.is_superadmin) return 0;
   const tid = user.tenant_id ?? user.id;
   return tid > 0 ? tid : user.id;
+}
+
+export function resolveShopTenantId(user: AdminUserRow): number | null {
+  if (user.is_superadmin) return null;
+  const tid = user.tenant_id ?? user.id;
+  return tid > 0 ? tid : null;
 }
 
 export async function getCurrentUserPayload(userId: number) {
   const user = await loadAdminUser(userId);
   if (!user || !user.aktif) return null;
 
-  const tenantId = resolveTenantId(user);
+  const tenantId = resolveShopTenantId(user);
   const role = user.role ?? "admin";
 
   return {
@@ -62,8 +74,12 @@ export async function getCurrentUserPayload(userId: number) {
     ad_soyad: user.ad_soyad,
     must_change_password: user.must_change_password,
     tenant_id: tenantId,
-    is_account_owner: isAccountOwner({ id: user.id, tenant_id: tenantId }),
-    permissions: buildUserPermissions(role, user.id, tenantId),
+    is_superadmin: user.is_superadmin,
+    is_account_owner:
+      !user.is_superadmin &&
+      tenantId != null &&
+      isAccountOwner({ id: user.id, tenant_id: tenantId }),
+    permissions: buildUserPermissions(role, user.id, tenantId, user.is_superadmin),
   };
 }
 
@@ -124,14 +140,53 @@ export async function requireManageStaff(): Promise<
 }
 
 export function canAssignStaffRole(
-  isOwner: boolean,
+  isSuperadmin: boolean,
   role: string
 ): role is StaffRole {
   if (!["admin", "teknisyen", "kasa"].includes(role)) return false;
-  if (isOwner) return true;
-  return role === "teknisyen" || role === "kasa";
+  if (isSuperadmin) return role === "admin";
+  return true;
 }
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
+}
+
+export async function createShopOwnerUser(input: {
+  username: string;
+  passwordHash: string;
+  adSoyad: string | null;
+  firmaAdi: string;
+  createdBy: number;
+}): Promise<{ ok: true; id: number } | { ok: false; message: string }> {
+  const db = getSupabaseAdmin();
+
+  const { data: inserted, error } = await db
+    .from("admin_users")
+    .insert({
+      username: input.username,
+      password_hash: input.passwordHash,
+      role: "admin",
+      ad_soyad: input.adSoyad,
+      tenant_id: null,
+      created_by: input.createdBy,
+      is_superadmin: false,
+    })
+    .select("id")
+    .single();
+
+  if (error || !inserted) {
+    return { ok: false, message: "Bu kullanıcı adı zaten kullanılıyor." };
+  }
+
+  const shopOwnerId = inserted.id;
+
+  await db.from("admin_users").update({ tenant_id: shopOwnerId }).eq("id", shopOwnerId);
+
+  await db.from("shop_settings").insert({
+    tenant_id: shopOwnerId,
+    firma_adi: input.firmaAdi.trim(),
+  });
+
+  return { ok: true, id: shopOwnerId };
 }

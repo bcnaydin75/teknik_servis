@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
+import { requireShopTenant } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 export async function handleSuppliers(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("suppliers");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const tenantId = auth.user.tenant_id;
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
   const db = getSupabaseAdmin();
 
   if (request.method === "GET") {

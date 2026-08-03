@@ -37,9 +37,9 @@ export function isAccountOwner(user: { id: number; tenant_id: number }): boolean
   return user.tenant_id === user.id;
 }
 
-/** Hesap sahibi tüm rolleri atayabilir; admin personeli yalnızca teknisyen/kasa ekleyebilir */
-export function assignableStaffRoles(isOwner: boolean): StaffRole[] {
-  return isOwner ? ["admin", "teknisyen", "kasa"] : ["teknisyen", "kasa"];
+/** Platform geliştirici yalnızca dükkan admini; dükkan admini tüm rolleri atayabilir */
+export function assignableStaffRoles(isSuperadmin: boolean): StaffRole[] {
+  return isSuperadmin ? ["admin"] : ["admin", "teknisyen", "kasa"];
 }
 
 export function canAccessRoute(pathname: string, perms: Permissions): boolean {

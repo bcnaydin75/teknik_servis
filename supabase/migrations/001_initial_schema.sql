@@ -18,6 +18,7 @@ CREATE TABLE admin_users (
   ad_soyad VARCHAR(150),
   aktif BOOLEAN NOT NULL DEFAULT TRUE,
   must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
+  is_superadmin BOOLEAN NOT NULL DEFAULT FALSE,
   tenant_id BIGINT REFERENCES admin_users (id) ON DELETE SET NULL,
   created_by BIGINT REFERENCES admin_users (id) ON DELETE SET NULL,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()

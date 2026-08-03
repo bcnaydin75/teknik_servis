@@ -33,7 +33,13 @@ export async function middleware(request: NextRequest) {
       }
 
       const text = await res.text();
-      let data: { success?: boolean; data?: { permissions?: Record<string, boolean> } };
+      let data: {
+        success?: boolean;
+        data?: {
+          permissions?: Record<string, boolean>;
+          is_superadmin?: boolean;
+        };
+      };
       try {
         data = JSON.parse(text) as typeof data;
       } catch {
@@ -47,6 +53,12 @@ export async function middleware(request: NextRequest) {
       }
 
       const perms = data.data?.permissions ?? {};
+      const isSuperadmin = Boolean(data.data?.is_superadmin);
+
+      if (isSuperadmin && !pathname.startsWith("/admin/settings") && !pathname.startsWith("/admin/login")) {
+        return NextResponse.redirect(new URL("/admin/settings", request.url));
+      }
+
       for (const [route, perm] of Object.entries(ROUTE_PERMS)) {
         if (pathname.startsWith(route) && !perms[perm]) {
           return NextResponse.redirect(new URL("/admin", request.url));

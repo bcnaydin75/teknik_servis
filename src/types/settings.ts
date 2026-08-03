@@ -17,6 +17,8 @@ export interface StaffMember {
   aktif: boolean;
   olusturma_tarihi: string;
   is_account_owner?: boolean;
+  /** Dükkan yöneticisi listesinde (geliştirici paneli) */
+  firma_adi?: string | null;
 }
 
 export interface PosItem {

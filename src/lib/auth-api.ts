@@ -12,6 +12,9 @@ export interface AuthResponse {
     role?: string;
     ad_soyad?: string | null;
     must_change_password?: boolean;
+    tenant_id?: number;
+    is_superadmin?: boolean;
+    is_account_owner?: boolean;
     permissions?: Permissions;
   };
 }

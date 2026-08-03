@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requireSession } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
+import { requireShopTenant } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
 
 function parseParts(raw: unknown): string[] {
@@ -57,7 +58,9 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const tenantId = auth.user.tenant_id;
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
   const db = getSupabaseAdmin();
   const sp = request.nextUrl.searchParams;
   const archived = sp.get("archived") === "1";
@@ -156,7 +159,9 @@ export async function handleDashboardStats(): Promise<NextResponse> {
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const tenantId = auth.user.tenant_id;
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
   const db = getSupabaseAdmin();
 
   const { data: repairs } = await db
@@ -207,7 +212,9 @@ export async function handleAddDevice(request: NextRequest): Promise<NextRespons
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const tenantId = auth.user.tenant_id;
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
   const db = getSupabaseAdmin();
   const body = await request.json();
   const adSoyad = (body.ad_soyad ?? "").trim();
@@ -280,7 +287,9 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const tenantId = auth.user.tenant_id;
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
   const db = getSupabaseAdmin();
   const body = await request.json();
   const id = Number(body.id);
@@ -388,7 +397,9 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
 
-  const tenantId = auth.user.tenant_id;
+  const shop = requireShopTenant(auth.user);
+  if (!shop.ok) return jsonFail(shop.message, shop.status);
+  const tenantId = shop.tenantId;
   const db = getSupabaseAdmin();
   const body = await request.json();
   const id = Number(body.id);

@@ -27,21 +27,18 @@ NEXT_PUBLIC_TENANT_SLUG=bcnaydin75
 
 ## 3. İlk admin
 
-Yerelde:
+**En kolay yol:** Supabase → **SQL Editor** → `supabase/seed_admin.sql` içeriğini yapıştır → Run.
+
+Varsayılan giriş:
+- Kullanıcı: `bcnaydin75`
+- Şifre: `Bcnaydin75!`
+
+(İlk girişten sonra Ayarlar'dan değiştir.)
+
+Alternatif — yerelde:
 
 ```bash
 node scripts/create-admin.mjs bcnaydin75 Sifren123
-```
-
-Veya SQL Editor:
-
-```sql
--- bcrypt hash'i create-admin.mjs ile üretin
-INSERT INTO admin_users (username, password_hash, role, tenant_id)
-VALUES ('bcnaydin75', '$2a$10$...', 'admin', NULL);
-UPDATE admin_users SET tenant_id = id WHERE username = 'bcnaydin75';
-INSERT INTO shop_settings (tenant_id, firma_adi) 
-SELECT id, 'Teknik Servis' FROM admin_users WHERE username = 'bcnaydin75';
 ```
 
 ## 4. MySQL verisi taşıma (opsiyonel)

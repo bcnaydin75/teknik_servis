@@ -12,9 +12,10 @@ interface EditDeviceModalProps {
   device: DeviceListItem | null;
   onClose: () => void;
   onSuccess: (message?: string) => void;
+  canSeeCosts?: boolean;
 }
 
-export default function EditDeviceModal({ device, onClose, onSuccess }: EditDeviceModalProps) {
+export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCosts = true }: EditDeviceModalProps) {
   const { t, locale } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [inventoryLoading, setInventoryLoading] = useState(false);
@@ -163,10 +164,10 @@ export default function EditDeviceModal({ device, onClose, onSuccess }: EditDevi
         cihaz_durumu: newStatus as DeviceListItem["cihaz_durumu"],
         degisen_parcalar: selectedItems.map((item) => item.part_name),
         inventory_ids: selectedIds,
-        parca_ucreti: parcaUcreti,
-        iscilik_ucreti: iscilikUcreti,
-        indirim,
-        toplam_ucret: toplamUcret,
+        parca_ucreti: canSeeCosts ? parcaUcreti : device!.parca_ucreti,
+        iscilik_ucreti: canSeeCosts ? iscilikUcreti : device!.iscilik_ucreti,
+        indirim: canSeeCosts ? indirim : 0,
+        toplam_ucret: canSeeCosts ? toplamUcret : device!.toplam_ucret,
         aciklama: String(form.get("aciklama") ?? "").trim() || undefined,
         imei_no: imeiNo.trim() || undefined,
         cihaz_sifresi: cihazSifresi.trim() || undefined,
@@ -430,8 +431,9 @@ export default function EditDeviceModal({ device, onClose, onSuccess }: EditDevi
               </div>
             </div>
 
-            {/* Sağ: Fiyatlandırma */}
+            {/* Sağ: Fiyatlandırma / kaydet */}
             <div className="space-y-4 sm:col-span-2">
+              {canSeeCosts && (
               <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
                 <h3 className="text-sm font-semibold text-slate-700">{t("admin.modals.editDevice.costDetail")}</h3>
 
@@ -499,6 +501,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess }: EditDevi
                   )}
                 </div>
               </div>
+              )}
 
               {error && (
                 <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">

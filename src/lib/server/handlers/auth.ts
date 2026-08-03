@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   getCurrentUserPayload,
   requireSession,
-  resolveTenantId,
+  resolveSessionTenantId,
   verifyPassword,
 } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
@@ -58,7 +58,7 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
       return jsonFail("Hesabınız pasif.", 403);
     }
 
-    const tenantId = resolveTenantId({
+    const tenantId = resolveSessionTenantId({
       id: user.id,
       username: user.username,
       role: user.role,
@@ -66,6 +66,7 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
       aktif: user.aktif,
       must_change_password: user.must_change_password,
       tenant_id: user.tenant_id,
+      is_superadmin: Boolean(user.is_superadmin),
     });
 
     const token = await signSession({

@@ -15,6 +15,7 @@ type DeviceTableProps =
       onArchive: (device: DeviceListItem) => void;
       onRestore?: never;
       emptyMessage?: string;
+      showCosts?: boolean;
     }
   | {
       devices: DeviceListItem[];
@@ -24,6 +25,7 @@ type DeviceTableProps =
       onEdit?: never;
       onArchive?: never;
       emptyMessage?: string;
+      showCosts?: boolean;
     };
 
 function DeviceActions(props: DeviceTableProps & { device: DeviceListItem }) {
@@ -75,7 +77,7 @@ function DeviceActions(props: DeviceTableProps & { device: DeviceListItem }) {
 
 function DeviceMobileCards(props: DeviceTableProps) {
   const { t, locale } = useTranslation();
-  const { devices } = props;
+  const { devices, showCosts = true } = props;
   const isArchived = props.variant === "archived";
 
   return (
@@ -116,12 +118,14 @@ function DeviceMobileCards(props: DeviceTableProps) {
               <p className="text-slate-400">{t("admin.deviceTable.device")}</p>
               <p className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">{device.cihaz_modeli}</p>
             </div>
+            {showCosts && (
             <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
               <p className="text-slate-400">{t("admin.deviceTable.total")}</p>
               <p className="mt-0.5 font-semibold text-slate-900 dark:text-white">
                 {formatCurrency(device.toplam_ucret, locale)}
               </p>
             </div>
+            )}
           </div>
 
           <p className="mt-2 text-xs text-slate-400">
@@ -149,7 +153,7 @@ function DeviceMobileCards(props: DeviceTableProps) {
 
 export default function DeviceTable(props: DeviceTableProps) {
   const { t, locale } = useTranslation();
-  const { devices, emptyMessage } = props;
+  const { devices, emptyMessage, showCosts = true } = props;
   const isArchived = props.variant === "archived";
   const defaultEmpty = t("admin.deviceTable.empty");
 
@@ -174,7 +178,9 @@ export default function DeviceTable(props: DeviceTableProps) {
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.deviceTable.customer")}</th>
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.deviceTable.device")}</th>
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.deviceTable.status")}</th>
+                {showCosts && (
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.deviceTable.total")}</th>
+                )}
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.deviceTable.updated")}</th>
                 <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.deviceTable.actions")}</th>
               </tr>
@@ -222,9 +228,11 @@ export default function DeviceTable(props: DeviceTableProps) {
                       {t(statusKey(device.cihaz_durumu))}
                     </span>
                   </td>
+                  {showCosts && (
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                     {formatCurrency(device.toplam_ucret, locale)}
                   </td>
+                  )}
                   <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
                     {formatDate(device.guncelleme_tarihi, locale, { day: "numeric", month: "short", year: "numeric" })}
                   </td>

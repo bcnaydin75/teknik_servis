@@ -44,10 +44,16 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [savingLocale, setSavingLocale] = useState(false);
 
-  const [newStaff, setNewStaff] = useState({ username: "", password: "", role: "teknisyen", ad_soyad: "" });
+  const [newStaff, setNewStaff] = useState({
+    username: "",
+    password: "",
+    role: "teknisyen",
+    ad_soyad: "",
+    firma_adi: "",
+  });
   const [pwdForm, setPwdForm] = useState({ old: "", new: "", confirm: "" });
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [isAccountOwner, setIsAccountOwner] = useState(false);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [canManageStaff, setCanManageStaff] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -62,8 +68,12 @@ export default function SettingsPage() {
     if (shopRes.success && shopRes.data) setShop(shopRes.data);
     if (authRes.success && authRes.data) {
       setCurrentUserId(authRes.data.id ?? null);
-      setIsAccountOwner(Boolean(authRes.data.is_account_owner));
+      setIsSuperadmin(Boolean(authRes.data.is_superadmin));
       setCanManageStaff(Boolean(authRes.data.permissions?.manage_staff));
+      if (authRes.data.is_superadmin) {
+        setTab("personel");
+        setNewStaff((s) => ({ ...s, role: "admin" }));
+      }
     }
     if (staffRes.success && staffRes.data) setStaff(staffRes.data);
     setLoading(false);
@@ -97,15 +107,30 @@ export default function SettingsPage() {
     setError(null);
     const pwdErr = validatePasswordT(newStaff.password, t);
     if (pwdErr) { setError(pwdErr); return; }
+    if (isSuperadmin && !newStaff.firma_adi.trim()) {
+      setError(t("admin.settings.personel.companyNameRequired"));
+      return;
+    }
     const res = await addStaff({
       username: newStaff.username.trim(),
       password: newStaff.password,
       role: newStaff.role,
       ad_soyad: newStaff.ad_soyad.trim() || undefined,
+      firma_adi: isSuperadmin ? newStaff.firma_adi.trim() : undefined,
     });
     if (res.success) {
-      setMessage(t("admin.settings.personel.staffAdded"));
-      setNewStaff({ username: "", password: "", role: "teknisyen", ad_soyad: "" });
+      setMessage(
+        isSuperadmin
+          ? t("admin.settings.personel.shopAdminAdded")
+          : t("admin.settings.personel.staffAdded")
+      );
+      setNewStaff({
+        username: "",
+        password: "",
+        role: isSuperadmin ? "admin" : "teknisyen",
+        ad_soyad: "",
+        firma_adi: "",
+      });
       load();
     } else setError(res.message ?? t("admin.settings.personel.addFailed"));
   }
@@ -156,14 +181,21 @@ export default function SettingsPage() {
   }
 
   const tabs: { id: Tab; labelKey: string }[] = [
-    { id: "firma", labelKey: "admin.settings.tabs.firma" },
-    ...(canManageStaff ? [{ id: "personel" as Tab, labelKey: "admin.settings.tabs.personel" }] : []),
+    ...(!isSuperadmin ? [{ id: "firma" as Tab, labelKey: "admin.settings.tabs.firma" }] : []),
+    ...(canManageStaff
+      ? [{
+          id: "personel" as Tab,
+          labelKey: isSuperadmin
+            ? "admin.settings.personel.shopManagers"
+            : "admin.settings.tabs.personel",
+        }]
+      : []),
     { id: "sifre", labelKey: "admin.settings.tabs.sifre" },
     { id: "tema", labelKey: "admin.settings.tabs.tema" },
-    { id: "dil", labelKey: "admin.settings.tabs.dil" },
+    ...(!isSuperadmin ? [{ id: "dil" as Tab, labelKey: "admin.settings.tabs.dil" }] : []),
   ];
 
-  const roleOptions = assignableStaffRoles(isAccountOwner);
+  const roleOptions = assignableStaffRoles(isSuperadmin);
 
   const currentLocale = normalizeLocale(shop?.default_locale ?? locale);
 
@@ -199,7 +231,7 @@ export default function SettingsPage() {
 
       {loading ? (
         <p className="text-slate-500 dark:text-slate-400">{t("common.loading")}</p>
-      ) : tab === "firma" && shop ? (
+      ) : tab === "firma" && shop && !isSuperadmin ? (
         <form onSubmit={handleShopSave} className="max-w-2xl space-y-5 rounded-2xl bg-white p-6 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
           <div className="flex items-center gap-4">
             {shop.logo_url ? (
@@ -266,10 +298,32 @@ export default function SettingsPage() {
       ) : tab === "personel" ? (
         <div className="space-y-6">
           <form onSubmit={handleAddStaff} className="max-w-2xl space-y-4 rounded-2xl bg-white p-6 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-            <h3 className="font-semibold text-slate-900 dark:text-white">{t("admin.settings.personel.newStaff")}</h3>
-            <p className="text-xs text-slate-500">{t("admin.settings.personel.staffScopeHint")}</p>
+            <h3 className="font-semibold text-slate-900 dark:text-white">
+              {isSuperadmin
+                ? t("admin.settings.personel.newShopAdmin")
+                : t("admin.settings.personel.newStaff")}
+            </h3>
+            <p className="text-xs text-slate-500">
+              {isSuperadmin
+                ? t("admin.settings.personel.shopAdminScopeHint")
+                : t("admin.settings.personel.staffScopeHint")}
+            </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <input value={newStaff.ad_soyad} onChange={(e) => setNewStaff({ ...newStaff, ad_soyad: e.target.value })} placeholder={t("admin.settings.personel.fullName")} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
+              {isSuperadmin && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+                    {t("admin.settings.personel.companyName")} *
+                  </label>
+                  <input
+                    value={newStaff.firma_adi}
+                    onChange={(e) => setNewStaff({ ...newStaff, firma_adi: e.target.value })}
+                    placeholder={t("admin.settings.personel.companyNamePlaceholder")}
+                    required
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                  />
+                </div>
+              )}
               <input value={newStaff.username} onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })} placeholder={t("admin.settings.personel.username")} required className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
               <PasswordInput
                 value={newStaff.password}
@@ -281,12 +335,20 @@ export default function SettingsPage() {
                 {roleOptions.includes("admin") && (
                   <option value="admin">{t("roles.admin")} — {t("roles.adminDesc")}</option>
                 )}
-                <option value="teknisyen">{t("roles.teknisyen")} — {t("roles.teknisyenDesc")}</option>
-                <option value="kasa">{t("roles.kasa")} — {t("roles.kasaDesc")}</option>
+                {!isSuperadmin && (
+                  <>
+                    <option value="teknisyen">{t("roles.teknisyen")} — {t("roles.teknisyenDesc")}</option>
+                    <option value="kasa">{t("roles.kasa")} — {t("roles.kasaDesc")}</option>
+                  </>
+                )}
               </select>
             </div>
             <p className="text-xs text-slate-500">{t("admin.password.hint")}</p>
-            <button type="submit" className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">{t("admin.settings.personel.addStaff")}</button>
+            <button type="submit" className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+              {isSuperadmin
+                ? t("admin.settings.personel.addShopAdmin")
+                : t("admin.settings.personel.addStaff")}
+            </button>
           </form>
 
           <div className="space-y-3 md:hidden">
@@ -306,8 +368,11 @@ export default function SettingsPage() {
                       )}
                     </p>
                     <p className="font-mono text-sm text-slate-500 dark:text-slate-400">{s.username}</p>
+                    {isSuperadmin && s.firma_adi && (
+                      <p className="mt-1 text-sm font-medium text-blue-600 dark:text-blue-400">{s.firma_adi}</p>
+                    )}
                   </div>
-                  {s.id === currentUserId || s.is_account_owner ? (
+                  {s.id === currentUserId ? (
                     <span className="text-xs text-slate-400">{t("common.you")}</span>
                   ) : (
                     <button
@@ -319,21 +384,24 @@ export default function SettingsPage() {
                     </button>
                   )}
                 </div>
+                {!isSuperadmin && (
                 <select
                   value={s.role}
                   onChange={async (e) => {
                     await updateStaff({ id: s.id, role: e.target.value, ad_soyad: s.ad_soyad, aktif: true });
                     load();
                   }}
-                  disabled={s.id === currentUserId || s.is_account_owner || (!isAccountOwner && s.role === "admin")}
+                  disabled={s.id === currentUserId || s.is_account_owner}
                   className="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                 >
-                  {(isAccountOwner || s.role === "admin") && (
-                    <option value="admin">{t("roles.admin")}</option>
-                  )}
+                  <option value="admin">{t("roles.admin")}</option>
                   <option value="teknisyen">{t("roles.teknisyen")}</option>
                   <option value="kasa">{t("roles.kasa")}</option>
                 </select>
+                )}
+                {isSuperadmin && (
+                  <p className="mt-2 text-xs text-slate-500">{t("roles.admin")} — {t("admin.settings.personel.accountOwner")}</p>
+                )}
               </div>
             ))}
           </div>
@@ -343,6 +411,9 @@ export default function SettingsPage() {
               <thead className="bg-slate-50 dark:bg-slate-900">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-400">{t("admin.settings.personel.nameCol")}</th>
+                  {isSuperadmin && (
+                    <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-400">{t("admin.settings.personel.companyCol")}</th>
+                  )}
                   <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-400">{t("admin.settings.personel.userCol")}</th>
                   <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-400">{t("admin.settings.personel.roleCol")}</th>
                   <th className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-400">{t("admin.settings.personel.actionsCol")}</th>
@@ -359,27 +430,32 @@ export default function SettingsPage() {
                         </span>
                       )}
                     </td>
+                    {isSuperadmin && (
+                      <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{s.firma_adi ?? t("common.dash")}</td>
+                    )}
                     <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-300">{s.username}</td>
                     <td className="px-4 py-3">
+                      {isSuperadmin ? (
+                        <span className="text-xs text-slate-500">{t("roles.admin")}</span>
+                      ) : (
                       <select
                         value={s.role}
                         onChange={async (e) => {
                           await updateStaff({ id: s.id, role: e.target.value, ad_soyad: s.ad_soyad, aktif: true });
                           load();
                         }}
-                        disabled={s.id === currentUserId || s.is_account_owner || (!isAccountOwner && s.role === "admin")}
+                        disabled={s.id === currentUserId || s.is_account_owner}
                         className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                       >
-                        {(isAccountOwner || s.role === "admin") && (
-                          <option value="admin">{t("roles.admin")}</option>
-                        )}
+                        <option value="admin">{t("roles.admin")}</option>
                         <option value="teknisyen">{t("roles.teknisyen")}</option>
                         <option value="kasa">{t("roles.kasa")}</option>
                       </select>
+                      )}
                     </td>
                     <td className="px-4 py-3">
-                      {s.id === currentUserId || s.is_account_owner ? (
-                        <span className="text-xs text-slate-400">{s.is_account_owner ? t("admin.settings.personel.accountOwner") : t("common.you")}</span>
+                      {s.id === currentUserId ? (
+                        <span className="text-xs text-slate-400">{t("common.you")}</span>
                       ) : (
                         <button
                           type="button"

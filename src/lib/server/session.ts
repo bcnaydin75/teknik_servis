@@ -32,7 +32,10 @@ export async function verifySession(token: string): Promise<SessionData | null> 
     const { payload } = await jwtVerify(token, getSecret());
     const adminId = Number(payload.adminId);
     const tenantId = Number(payload.tenantId);
-    if (!adminId || !tenantId || typeof payload.username !== "string") {
+    if (!adminId || typeof payload.username !== "string") {
+      return null;
+    }
+    if (!Number.isFinite(tenantId) || tenantId < 0) {
       return null;
     }
     return {
