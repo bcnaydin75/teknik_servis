@@ -1,6 +1,16 @@
-/** Yerel Laragon fallback — NEXT_PUBLIC_API_URL tanımlı değilse kullanılır */
-export const DEFAULT_API_BASE_URL =
-  "http://localhost/teknik_servis_projesi/backend";
+/**
+ * cPanel PHP API (production).
+ * Vercel'de Environment Variable ile override edilebilir: NEXT_PUBLIC_API_URL
+ */
+export const CPANEL_API_BASE_URL =
+  "http://loyal-brown-emu.89-252-180-227.cpanel.site";
+
+/** Yerel Laragon geliştirme */
+export const LOCAL_API_BASE_URL =
+  "http://127.0.0.1/teknik_servis_projesi/backend";
+
+/** Ortam değişkeni yoksa cPanel kullanılır */
+export const DEFAULT_API_BASE_URL = CPANEL_API_BASE_URL;
 
 /** Frontend kök adresi (takip linkleri için) */
 export const DEFAULT_APP_URL = "http://localhost:3000";
@@ -12,16 +22,27 @@ export function getApiBaseUrl(): string {
 }
 
 /**
- * PHP API URL'si.
- * Tarayıcıda Next.js rewrite proxy (/api/*) kullanılır — CORS ve bağlantı sorunları önlenir.
- * Sunucu tarafında doğrudan backend adresi kullanılır.
+ * Tarayıcı istekleri same-origin /api proxy üzerinden gider (Vercel rewrite → cPanel PHP).
+ * Mixed-content (HTTPS→HTTP) ve oturum çerezleri için gereklidir.
+ * Middleware / SSR doğrudan getApiBaseUrl() kullanır.
  */
 export function apiUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
+
   if (typeof window !== "undefined") {
     return new URL(normalized, window.location.origin).href;
   }
+
   return `${getApiBaseUrl()}${normalized}`;
+}
+
+/**
+ * Edge middleware — oturum çerezleri same-origin proxy ile taşınır,
+ * rewrite hedefi getApiBaseUrl() (cPanel PHP).
+ */
+export function apiUrlFromOrigin(path: string, origin: string): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return new URL(normalized, origin).href;
 }
 
 /** Query parametreli API URL'si */
@@ -52,8 +73,10 @@ export function resolveBackendAssetUrl(path: string | null | undefined): string 
   if (!path?.trim()) return null;
   if (/^https?:\/\//i.test(path)) return path;
   const relative = path.replace(/^\//, "");
+
   if (typeof window !== "undefined") {
     return new URL(`/backend/${relative}`, window.location.origin).href;
   }
+
   return `${getApiBaseUrl()}/${relative}`;
 }

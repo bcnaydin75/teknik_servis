@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   allowedDevOrigins: ["192.168.1.85"],
   async rewrites() {
+    /** Vercel / yerel Next → cPanel (veya Laragon) PHP; MySQL yalnızca PHP tarafında */
     const phpApiBase = getApiBaseUrl();
     return [
       {

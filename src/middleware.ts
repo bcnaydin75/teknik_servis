@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { apiUrlFromOrigin } from "@/lib/api-config";
 
 const ROUTE_PERMS: Record<string, string> = {
   "/admin/inventory": "inventory",
@@ -19,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/admin")) {
     const cookie = request.headers.get("cookie") ?? "";
-    const meUrl = new URL("/api/auth.php?action=me", request.url);
+    const meUrl = apiUrlFromOrigin("/api/auth.php?action=me", request.nextUrl.origin);
 
     try {
       const res = await fetch(meUrl, { headers: { cookie }, cache: "no-store" });

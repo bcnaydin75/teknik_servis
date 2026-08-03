@@ -1,25 +1,50 @@
 # Teknik Servis — Frontend (Next.js)
 
-Vercel'e deploy edilecek Next.js arayüzü. PHP API ayrı sunucuda (Laragon veya hosting) çalışmalıdır.
+Vercel'de çalışan arayüz. **PHP API ve MySQL yalnızca cPanel'de** çalışır; Vercel veritabanına bağlanmaz.
+
+## Mimari
+
+```
+Tarayıcı  →  Vercel (/api/* proxy)  →  cPanel PHP API  →  MySQL
+```
+
+- Tüm `fetch` çağrıları `src/lib/api-config.ts` içindeki `apiUrl()` üzerinden gider
+- Vercel `next.config.ts` rewrite ile `/api/*` isteklerini cPanel'e yönlendirir
+- Bu repoda **Next.js API route veya MySQL bağlantısı yok**
 
 ## Vercel kurulum
 
-1. [github.com/bcnaydin75/teknik_servis](https://github.com/bcnaydin75/teknik_servis) reposunu Vercel'e import et
-2. Framework: **Next.js** (otomatik algılanır)
-3. **Environment Variable** ekle:
-   - `NEXT_PUBLIC_API_URL` = PHP backend kök URL'i (ör. `https://api.example.com/backend`)
-4. Deploy
+1. [github.com/bcnaydin75/teknik_servis](https://github.com/bcnaydin75/teknik_servis) reposunu import et
+2. **Settings → Environment Variables** ekle:
+
+| Değişken | Değer |
+|----------|--------|
+| `NEXT_PUBLIC_API_URL` | `http://loyal-brown-emu.89-252-180-227.cpanel.site` |
+
+3. **Redeploy** (env değişince mutlaka yeniden deploy)
+
+> cPanel'de SSL varsa `https://` kullanın. Tarayıcı HTTPS Vercel sitesinden HTTP API'ye doğrudan istek atamaz; proxy bu yüzden kullanılır.
 
 ## Yerel geliştirme
 
 ```bash
 npm install
+cp .env.local.example .env.local
 npm run dev
 ```
 
-`.env.local` oluştur (`.env.example` dosyasına bak).
+`.env.local` içinde Laragon backend adresi:
 
-## Not
+```
+NEXT_PUBLIC_API_URL=http://127.0.0.1/teknik_servis_projesi/backend
+```
 
-- `/api/*` istekleri `NEXT_PUBLIC_API_URL` üzerinden PHP backend'e proxy edilir
-- Backend bu repoda yok; Laragon'daki `backend/` klasöründe kalır
+## cPanel PHP
+
+API dosyaları cPanel `public_html` (veya alt klasör) içinde olmalı:
+
+- `/api/auth.php`
+- `/api/settings.php`
+- vb.
+
+502 hatası genelde `NEXT_PUBLIC_API_URL` eksik/yanlış veya cPanel PHP'nin kapalı olmasından kaynaklanır.
