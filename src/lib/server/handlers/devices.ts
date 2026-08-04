@@ -450,45 +450,67 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
 export async function handleRepairStatus(
   request: NextRequest
 ): Promise<NextResponse> {
-  const takipKodu = (request.nextUrl.searchParams.get("takip_kodu") ?? "")
-    .trim()
-    .toUpperCase();
+  const raw = (request.nextUrl.searchParams.get("takip_kodu") ?? "").trim();
+  const takipKodu = raw.replace(/\s+/g, "").toUpperCase();
   if (!takipKodu) return jsonFail("Takip kodu gereklidir.", 400);
 
   const db = getSupabaseAdmin();
-  const shop = (request.nextUrl.searchParams.get("shop") ?? "").trim();
 
-  // Takip kodları dükkan önekli (APH-26-001) — global arama yeterli.
-  // shop=bcnaydin75 gibi geliştirici slug'ı yanlışlıkla tüm kayıtları ezerdi.
-  let query = db
+  // Join yok (PostgREST ilişki cache). Shop filtresi yok (geliştirici slug kayıtları ezerdi).
+  // Önce birebir, yoksa büyük/küçük harf duyarsız.
+  let row: Record<string, unknown> | null = null;
+
+  const exact = await db
     .from(Tables.tamirKayitlari)
-    .select(`*, ${Tables.musteriler}(ad_soyad)`)
-    .ilike("takip_kodu", takipKodu)
+    .select("*")
+    .eq("takip_kodu", takipKodu)
     .limit(1);
-
-  if (shop) {
-    const { resolveTenantIdByShopSlug } = await import("../shop-settings");
-    const tenantId = await resolveTenantIdByShopSlug(shop);
-    if (tenantId) query = query.eq("tenant_id", tenantId);
-  }
-
-  const { data: rows, error } = await query;
-  const row = Array.isArray(rows) ? rows[0] : rows;
-
-  if (error) {
-    console.error("[repair-status]", error.message, error.code, error.details);
+  if (exact.error) {
+    console.error("[repair-status]", exact.error.message, exact.error.code);
     return jsonFail("Kayıt bulunamadı.", 404);
   }
+  row = (exact.data?.[0] as Record<string, unknown> | undefined) ?? null;
+
+  if (!row) {
+    const loose = await db
+      .from(Tables.tamirKayitlari)
+      .select("*")
+      .ilike("takip_kodu", takipKodu)
+      .limit(1);
+    if (loose.error) {
+      console.error("[repair-status]", loose.error.message, loose.error.code);
+      return jsonFail("Kayıt bulunamadı.", 404);
+    }
+    row = (loose.data?.[0] as Record<string, unknown> | undefined) ?? null;
+  }
+
   if (!row) return jsonFail("Kayıt bulunamadı.", 404);
 
-  const customer = (row[Tables.musteriler] ?? {}) as { ad_soyad?: string };
-  const settingsTenant = row.tenant_id as number;
+  let musteriAdi = "—";
+  const customerId = Number(row.customer_id);
+  if (customerId > 0) {
+    const { data: customer } = await db
+      .from(Tables.musteriler)
+      .select("ad_soyad")
+      .eq("id", customerId)
+      .maybeSingle();
+    if (customer?.ad_soyad) musteriAdi = customer.ad_soyad;
+  }
+
+  const settingsTenant = Number(row.tenant_id) || 0;
   const { getShopSettingsForTenant } = await import("../shop-settings");
-  const shopSettings = await getShopSettingsForTenant(settingsTenant);
+  const shopSettings =
+    settingsTenant > 0
+      ? await getShopSettingsForTenant(settingsTenant)
+      : {
+          firma_adi: "Teknik Servis",
+          telefon: null as string | null,
+          ucret_detayi_goster: true,
+        };
 
   let data: Record<string, unknown> = {
     takip_kodu: row.takip_kodu,
-    musteri_adi: customer.ad_soyad ?? "—",
+    musteri_adi: musteriAdi,
     cihaz_modeli: row.cihaz_modeli,
     cihaz_durumu: row.cihaz_durumu,
     degisen_parcalar: parseParts(row.degisen_parcalar),
@@ -498,6 +520,9 @@ export async function handleRepairStatus(
     aciklama: row.aciklama ?? null,
     olusturma_tarihi: row.olusturma_tarihi,
     guncelleme_tarihi: row.guncelleme_tarihi,
+    ucret_detayi_goster: shopSettings.ucret_detayi_goster !== false,
+    firma_adi: shopSettings.firma_adi ?? null,
+    firma_telefon: shopSettings.telefon ?? null,
   };
 
   if (!shopSettings.ucret_detayi_goster) {
@@ -506,6 +531,7 @@ export async function handleRepairStatus(
       parca_ucreti: 0,
       iscilik_ucreti: 0,
       toplam_ucret: 0,
+      ucret_detayi_goster: false,
     };
   }
 

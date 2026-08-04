@@ -339,8 +339,8 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
               </div>
 
               {status === "teslim_edildi" && selectedItems.length > 0 && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-                  <label className="flex cursor-pointer items-center gap-3">
+                <div className="rounded-xl border border-emerald-300/80 bg-emerald-50 p-4 dark:border-emerald-400/35 dark:bg-slate-800/90">
+                  <label className="flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
                       checked={garantiVer}
@@ -353,21 +353,21 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                           setWarrantyEnabled(all);
                         }
                       }}
-                      className="h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+                      className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 dark:border-slate-400 dark:bg-slate-700 dark:text-emerald-400"
                     />
                     <div>
-                      <p className="text-sm font-semibold text-emerald-800">{t("admin.modals.editDevice.warranty")}</p>
-                      <p className="text-xs text-emerald-600">{t("admin.modals.editDevice.warrantyHint")}</p>
+                      <p className="text-sm font-semibold text-emerald-950 dark:text-white">{t("admin.modals.editDevice.warranty")}</p>
+                      <p className="mt-0.5 text-xs text-emerald-800/80 dark:text-slate-200">{t("admin.modals.editDevice.warrantyHint")}</p>
                     </div>
                   </label>
 
                   {garantiVer && (
                     <div className="mt-4 space-y-2">
-                      <p className="text-xs font-medium text-emerald-700">{t("admin.modals.editDevice.warrantyParts")}</p>
+                      <p className="text-xs font-medium text-emerald-900 dark:text-slate-100">{t("admin.modals.editDevice.warrantyParts")}</p>
                       {selectedItems.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm"
+                          className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm ring-1 ring-emerald-100 dark:bg-slate-900/70 dark:ring-slate-600/50"
                         >
                           <label className="flex flex-1 cursor-pointer items-center gap-2">
                             <input
@@ -379,9 +379,9 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                                   [item.id]: e.target.checked,
                                 }))
                               }
-                              className="h-4 w-4 rounded text-emerald-600"
+                              className="h-4 w-4 rounded text-emerald-600 dark:border-slate-500 dark:bg-slate-700"
                             />
-                            <span className="truncate text-slate-700">{item.part_name}</span>
+                            <span className="truncate text-slate-800 dark:text-white">{item.part_name}</span>
                           </label>
                           <div className="flex items-center gap-1 shrink-0">
                             <input
@@ -396,9 +396,9 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                                   [item.id]: parseInt(e.target.value, 10) || 3,
                                 }))
                               }
-                              className="w-14 rounded border border-slate-200 px-2 py-1 text-center text-sm disabled:bg-slate-100 disabled:text-slate-400"
+                              className="w-14 rounded border border-slate-200 bg-white px-2 py-1 text-center text-sm text-slate-900 disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:disabled:bg-slate-900 dark:disabled:text-slate-500"
                             />
-                            <span className="text-xs text-slate-500">{t("common.months")}</span>
+                            <span className="text-xs text-slate-600 dark:text-slate-200">{t("common.months")}</span>
                           </div>
                         </div>
                       ))}

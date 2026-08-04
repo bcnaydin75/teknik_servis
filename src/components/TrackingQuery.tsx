@@ -38,10 +38,18 @@ export default function TrackingQuery() {
   }, [t]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl =
+      params.get("takip_kodu") ?? params.get("kod") ?? params.get("code");
+    if (fromUrl?.trim()) {
+      const kod = fromUrl.trim().toUpperCase();
+      setTakipKodu(kod);
+      void runQuery(kod);
+    }
     if (window.location.search) {
       window.history.replaceState(null, "", "/");
     }
-  }, []);
+  }, [runQuery]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

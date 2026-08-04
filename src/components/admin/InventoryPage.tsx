@@ -159,12 +159,12 @@ export default function InventoryPage() {
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/80">
                     <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.inventory.partName")}</th>
-                    {showCosts && <th className="px-6 py-4 font-semibold text-slate-600">{t("admin.inventory.cost")}</th>}
-                    <th className="px-6 py-4 font-semibold text-slate-600">{t("admin.inventory.sellPrice")}</th>
-                    <th className="px-6 py-4 font-semibold text-slate-600">{t("admin.inventory.supplier")}</th>
-                    <th className="px-6 py-4 font-semibold text-slate-600">{t("admin.inventory.stock")}</th>
-                    {showCosts && <th className="px-6 py-4 font-semibold text-slate-600">{t("admin.inventory.margin")}</th>}
-                    <th className="px-6 py-4 font-semibold text-slate-600">{t("admin.inventory.action")}</th>
+                    {showCosts && <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.inventory.cost")}</th>}
+                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.inventory.sellPrice")}</th>
+                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.inventory.supplier")}</th>
+                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.inventory.stock")}</th>
+                    {showCosts && <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.inventory.margin")}</th>}
+                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">{t("admin.inventory.action")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -181,7 +181,7 @@ export default function InventoryPage() {
                         <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
                           {formatCurrency(item.sell_price, locale)}
                         </td>
-                        <td className="px-6 py-4 text-slate-600">{item.supplier_name ?? t("common.dash")}</td>
+                        <td className="px-6 py-4 text-slate-700 dark:text-white">{item.supplier_name ?? t("common.dash")}</td>
                         <td className="px-6 py-4">
                           <span
                             className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset ${

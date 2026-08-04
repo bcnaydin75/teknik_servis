@@ -10,6 +10,26 @@ import {
 import { getSupabaseAdmin } from "../supabase";
 import { Tables } from "../db-tables";
 
+async function addSupplierDebt(opts: {
+  tenantId: number;
+  supplierId: number;
+  qty: number;
+  unitPrice: number;
+  partName: string;
+}) {
+  const amount = Math.round(opts.qty * opts.unitPrice * 100) / 100;
+  if (!opts.supplierId || opts.qty <= 0 || amount <= 0) return;
+
+  const db = getSupabaseAdmin();
+  await db.from(Tables.tedarikciIslemleri).insert({
+    tenant_id: opts.tenantId,
+    supplier_id: opts.supplierId,
+    type: "borc",
+    amount,
+    description: `Stok: ${opts.partName} × ${opts.qty} (birim ₺${opts.unitPrice})`,
+  });
+}
+
 export async function handleInventory(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("inventory");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
@@ -53,12 +73,38 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
     if (!payload.part_name) return jsonFail("Parça adı zorunludur.", 400);
 
     if (action === "update" && body.id) {
+      const id = Number(body.id);
+      let existingQuery = db.from(Tables.stok).select("*").eq("id", id);
+      existingQuery = applyTenantFilter(existingQuery, scope);
+      const { data: existing } = await existingQuery.maybeSingle();
+
       const { error } = await withScopedId(
         db.from(Tables.stok).update(payload),
         scope,
-        Number(body.id)
+        id
       );
       if (error) return jsonFail("Kaydedilemedi.", 500);
+
+      // Stok artışı varsa adet × maliyet → tedarikçi borcu
+      if (existing && payload.supplier_id) {
+        const oldQty = Number(existing.stock_quantity ?? 0);
+        const added = payload.stock_quantity - oldQty;
+        if (added > 0 && payload.buy_price > 0) {
+          const tenantId =
+            Number(existing.tenant_id) ||
+            (scope.mode === "shop" ? scope.tenantId : 0);
+          if (tenantId > 0) {
+            await addSupplierDebt({
+              tenantId,
+              supplierId: payload.supplier_id,
+              qty: added,
+              unitPrice: payload.buy_price,
+              partName: payload.part_name,
+            });
+          }
+        }
+      }
+
       return jsonOk({ message: "Stok güncellendi." });
     }
 
@@ -70,6 +116,17 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
       tenant_id: write.tenantId,
     });
     if (error) return jsonFail("Kaydedilemedi.", 500);
+
+    if (payload.supplier_id && payload.stock_quantity > 0 && payload.buy_price > 0) {
+      await addSupplierDebt({
+        tenantId: write.tenantId,
+        supplierId: payload.supplier_id,
+        qty: payload.stock_quantity,
+        unitPrice: payload.buy_price,
+        partName: payload.part_name,
+      });
+    }
+
     return jsonOk({ message: "Stok eklendi." });
   }
 

@@ -18,6 +18,10 @@ export interface RepairData {
   aciklama: string | null;
   olusturma_tarihi: string;
   guncelleme_tarihi: string;
+  /** Kayıtın dükkan ayarına göre — false ise ücret kutusu hiç gösterilmez */
+  ucret_detayi_goster?: boolean;
+  firma_adi?: string | null;
+  firma_telefon?: string | null;
 }
 
 export interface RepairApiResponse {

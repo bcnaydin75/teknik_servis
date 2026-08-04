@@ -2,15 +2,12 @@ import type { RepairApiResponse } from "@/types/repair";
 import { apiUrl } from "@/lib/api-config";
 import { apiHeaders } from "@/lib/api-locale";
 import { apiFallback } from "@/lib/i18n/api-fallback";
-import { withShopParam } from "@/lib/tenant-slug";
 
 export async function fetchRepairStatus(
   takipKodu: string
 ): Promise<RepairApiResponse> {
-  const url = withShopParam(
-    new URL(apiUrl("/api/repair-status.php"))
-  );
-  url.searchParams.set("takip_kodu", takipKodu.trim());
+  const url = new URL(apiUrl("/api/repair-status.php"));
+  url.searchParams.set("takip_kodu", takipKodu.trim().replace(/\s+/g, ""));
 
   const response = await fetch(url.toString(), {
     method: "GET",

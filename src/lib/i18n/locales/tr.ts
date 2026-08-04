@@ -436,7 +436,7 @@ export const messages = {
       editStock: "Stok Düzenle",
       addStockModal: "Yeni Stok Ekle",
       quantity: "Stok Adedi",
-      supplierHint: "Stok eklerken otomatik cari borç oluşur",
+      supplierHint: "Tedarikçi seçilirse adet × maliyet otomatik borç yazılır",
       noSupplier: "Tedarikçi seçilmedi",
       updated: "Stok güncellendi.",
       added: "Yeni stok eklendi.",

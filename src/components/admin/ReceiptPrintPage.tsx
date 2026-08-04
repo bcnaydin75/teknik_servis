@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import QRCode from "react-qr-code";
 import { fetchRepairStatus } from "@/lib/api";
-import { fetchPublicSettings } from "@/lib/settings-api";
+import { fetchShopSettings } from "@/lib/settings-api";
 import { getTrackingUrl } from "@/lib/whatsapp";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatDate } from "@/lib/i18n/format";
@@ -28,7 +28,7 @@ export default function ReceiptPrintPage() {
         else setError(res.message ?? t("errors.notFound"));
       })
       .catch(() => setError(t("admin.receipt.loadFailed")));
-    fetchPublicSettings().then((res) => {
+    fetchShopSettings().then((res) => {
       if (res.success && res.data) setShop(res.data);
     });
   }, [kod, t]);
@@ -208,7 +208,8 @@ function ReceiptContent({
   locale: Locale;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
-  const firmaAdi = shop?.firma_adi ?? t("admin.receipt.defaultShop");
+  const firmaAdi = shop?.firma_adi?.trim() || t("admin.receipt.defaultShop");
+  const telefon = shop?.telefon?.trim() || "";
   return (
     <div className="receipt-paper">
       {error && <p style={{ color: "red", fontSize: 11 }}>{error}</p>}
@@ -227,10 +228,13 @@ function ReceiptContent({
                 />
               </div>
             )}
-            <p style={{ fontSize: 14, fontWeight: "bold", margin: 0 }}>{firmaAdi.toUpperCase()}</p>
-            {shop?.telefon && <p style={{ fontSize: 8, margin: "2px 0 0" }}>{shop.telefon}</p>}
-            {shop?.adres && <p style={{ fontSize: 8, margin: "2px 0 0", color: "#555" }}>{shop.adres}</p>}
-            <p style={{ fontSize: 9, color: "#555", margin: "4px 0 0" }}>{t("admin.receipt.title")}</p>
+            <p style={{ fontSize: 15, fontWeight: "bold", margin: 0, letterSpacing: 0.3 }}>
+              {firmaAdi.toUpperCase()}
+            </p>
+            {telefon ? (
+              <p style={{ fontSize: 11, fontWeight: 600, margin: "4px 0 0" }}>{telefon}</p>
+            ) : null}
+            <p style={{ fontSize: 9, color: "#555", margin: "6px 0 0" }}>{t("admin.receipt.title")}</p>
           </div>
 
           <div style={{ fontSize: 10 }}>
