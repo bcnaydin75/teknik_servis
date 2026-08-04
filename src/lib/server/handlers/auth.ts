@@ -12,6 +12,7 @@ import {
   signSession,
 } from "../session";
 import { getSupabaseAdmin } from "../supabase";
+import { Tables } from "../db-tables";
 export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   const action = request.nextUrl.searchParams.get("action") ?? "";
   const db = getSupabaseAdmin();
@@ -32,17 +33,31 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     }
 
     const { data: user, error } = await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .select("*")
       .ilike("username", username)
       .maybeSingle();
 
     if (error) {
-      console.error("[auth/login] supabase:", error.message);
-      return jsonFail(
-        "Veritabanı bağlantı hatası. SUPABASE_SERVICE_ROLE_KEY kontrol edin.",
-        500
-      );
+      console.error("[auth/login] supabase:", error.message, error.code, error.details);
+      const msg = (error.message ?? "").toLowerCase();
+      if (
+        msg.includes("could not find the table") ||
+        msg.includes("does not exist") ||
+        msg.includes("schema cache")
+      ) {
+        return jsonFail(
+          "Veritabanı tablosu bulunamadı. supabase/migrations/004_turkce_tablo_adlari.sql çalıştırıldı mı?",
+          500
+        );
+      }
+      if (msg.includes("jwt") || msg.includes("api key") || msg.includes("invalid")) {
+        return jsonFail(
+          "Veritabanı bağlantı hatası. SUPABASE_SERVICE_ROLE_KEY kontrol edin.",
+          500
+        );
+      }
+      return jsonFail(`Veritabanı hatası: ${error.message}`, 500);
     }
 
     if (!user) {
@@ -108,11 +123,11 @@ export async function handlePing(request?: NextRequest): Promise<NextResponse> {
     try {
       const db = getSupabaseAdmin();
       const { count, error } = await db
-        .from("admin_users")
+        .from(Tables.yoneticiKullanicilar)
         .select("*", { count: "exact", head: true });
 
       const { data: sample } = await db
-        .from("admin_users")
+        .from(Tables.yoneticiKullanicilar)
         .select("username, aktif")
         .ilike("username", "bcnaydin75")
         .maybeSingle();

@@ -1,4 +1,4 @@
--- Teknik Servis — Supabase (PostgreSQL) şeması
+-- Teknik Servis — Supabase (PostgreSQL) şeması (Türkçe tablo adları)
 -- Supabase SQL Editor'de veya CLI ile çalıştırın.
 
 CREATE TYPE admin_role AS ENUM ('admin', 'teknisyen', 'kasa');
@@ -10,7 +10,7 @@ CREATE TYPE cari_tx_type AS ENUM ('borc', 'odeme');
 CREATE TYPE payment_type AS ENUM ('nakit', 'kart', 'veresiye');
 CREATE TYPE supplier_tx_type AS ENUM ('borc', 'odeme');
 
-CREATE TABLE admin_users (
+CREATE TABLE yonetici_kullanicilar (
   id BIGSERIAL PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
@@ -19,14 +19,14 @@ CREATE TABLE admin_users (
   aktif BOOLEAN NOT NULL DEFAULT TRUE,
   must_change_password BOOLEAN NOT NULL DEFAULT FALSE,
   is_superadmin BOOLEAN NOT NULL DEFAULT FALSE,
-  tenant_id BIGINT REFERENCES admin_users (id) ON DELETE SET NULL,
-  created_by BIGINT REFERENCES admin_users (id) ON DELETE SET NULL,
+  tenant_id BIGINT REFERENCES yonetici_kullanicilar (id) ON DELETE SET NULL,
+  created_by BIGINT REFERENCES yonetici_kullanicilar (id) ON DELETE SET NULL,
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE shop_settings (
+CREATE TABLE dukkan_ayarlari (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL UNIQUE REFERENCES admin_users (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL UNIQUE REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
   firma_adi VARCHAR(200) NOT NULL DEFAULT 'Teknik Servis',
   adres TEXT,
   telefon VARCHAR(30),
@@ -34,12 +34,13 @@ CREATE TABLE shop_settings (
   logo_path VARCHAR(500),
   default_locale VARCHAR(5) NOT NULL DEFAULT 'tr',
   ucret_detayi_goster BOOLEAN NOT NULL DEFAULT TRUE,
+  takip_oneki VARCHAR(6) UNIQUE,
   guncelleme_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE customers (
+CREATE TABLE musteriler (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
   ad_soyad VARCHAR(200) NOT NULL,
   telefon VARCHAR(30),
   email VARCHAR(150),
@@ -49,13 +50,13 @@ CREATE TABLE customers (
   olusturma_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_customers_tenant ON customers (tenant_id);
-CREATE INDEX idx_customers_telefon ON customers (tenant_id, telefon);
+CREATE INDEX idx_musteriler_tenant ON musteriler (tenant_id);
+CREATE INDEX idx_musteriler_telefon ON musteriler (tenant_id, telefon);
 
-CREATE TABLE repairs (
+CREATE TABLE tamir_kayitlari (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
-  customer_id BIGINT NOT NULL REFERENCES customers (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
+  customer_id BIGINT NOT NULL REFERENCES musteriler (id) ON DELETE CASCADE,
   takip_kodu VARCHAR(50) NOT NULL,
   cihaz_modeli VARCHAR(200) NOT NULL,
   cihaz_durumu device_status NOT NULL DEFAULT 'beklemede',
@@ -73,13 +74,13 @@ CREATE TABLE repairs (
   UNIQUE (tenant_id, takip_kodu)
 );
 
-CREATE INDEX idx_repairs_tenant ON repairs (tenant_id);
-CREATE INDEX idx_repairs_takip ON repairs (takip_kodu);
-CREATE INDEX idx_repairs_archive ON repairs (tenant_id, arsivlendi, arsiv_tarihi);
+CREATE INDEX idx_tamir_kayitlari_tenant ON tamir_kayitlari (tenant_id);
+CREATE INDEX idx_tamir_kayitlari_takip ON tamir_kayitlari (takip_kodu);
+CREATE INDEX idx_tamir_kayitlari_arsiv ON tamir_kayitlari (tenant_id, arsivlendi, arsiv_tarihi);
 
-CREATE TABLE suppliers (
+CREATE TABLE tedarikciler (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
   firma_adi VARCHAR(200) NOT NULL,
   telefon VARCHAR(30),
   email VARCHAR(150),
@@ -88,41 +89,41 @@ CREATE TABLE suppliers (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE inventory (
+CREATE TABLE stok (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
   part_name VARCHAR(150) NOT NULL,
   buy_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
   sell_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
   stock_quantity INT NOT NULL DEFAULT 0,
-  supplier_id BIGINT REFERENCES suppliers (id) ON DELETE SET NULL,
+  supplier_id BIGINT REFERENCES tedarikciler (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE supplier_transactions (
+CREATE TABLE tedarikci_islemleri (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
-  supplier_id BIGINT NOT NULL REFERENCES suppliers (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
+  supplier_id BIGINT NOT NULL REFERENCES tedarikciler (id) ON DELETE CASCADE,
   type supplier_tx_type NOT NULL,
   amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
   description VARCHAR(255),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE transactions (
+CREATE TABLE finans_islemleri (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
   type finance_tx_type NOT NULL,
   amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
   description VARCHAR(255),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE warranties (
+CREATE TABLE garantiler (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
-  customer_id BIGINT NOT NULL REFERENCES customers (id) ON DELETE CASCADE,
-  repair_id BIGINT REFERENCES repairs (id) ON DELETE SET NULL,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
+  customer_id BIGINT NOT NULL REFERENCES musteriler (id) ON DELETE CASCADE,
+  repair_id BIGINT REFERENCES tamir_kayitlari (id) ON DELETE SET NULL,
   parca_adi VARCHAR(150) NOT NULL,
   garanti_ay INT NOT NULL,
   baslangic_tarihi DATE NOT NULL,
@@ -132,35 +133,35 @@ CREATE TABLE warranties (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE pos_sales (
+CREATE TABLE pos_satislar (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
-  customer_id BIGINT REFERENCES customers (id) ON DELETE SET NULL,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
+  customer_id BIGINT REFERENCES musteriler (id) ON DELETE SET NULL,
   payment_type payment_type NOT NULL DEFAULT 'nakit',
   total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
   description VARCHAR(255),
-  created_by BIGINT REFERENCES admin_users (id) ON DELETE SET NULL,
+  created_by BIGINT REFERENCES yonetici_kullanicilar (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE pos_sale_items (
+CREATE TABLE pos_satis_kalemleri (
   id BIGSERIAL PRIMARY KEY,
-  sale_id BIGINT NOT NULL REFERENCES pos_sales (id) ON DELETE CASCADE,
-  inventory_id BIGINT NOT NULL REFERENCES inventory (id) ON DELETE RESTRICT,
+  sale_id BIGINT NOT NULL REFERENCES pos_satislar (id) ON DELETE CASCADE,
+  inventory_id BIGINT NOT NULL REFERENCES stok (id) ON DELETE RESTRICT,
   part_name VARCHAR(150) NOT NULL,
   quantity INT NOT NULL DEFAULT 1,
   unit_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
   total_price DECIMAL(10, 2) NOT NULL DEFAULT 0
 );
 
-CREATE TABLE customer_transactions (
+CREATE TABLE cari_islemleri (
   id BIGSERIAL PRIMARY KEY,
-  tenant_id BIGINT NOT NULL REFERENCES admin_users (id) ON DELETE CASCADE,
-  customer_id BIGINT NOT NULL REFERENCES customers (id) ON DELETE CASCADE,
+  tenant_id BIGINT NOT NULL REFERENCES yonetici_kullanicilar (id) ON DELETE CASCADE,
+  customer_id BIGINT NOT NULL REFERENCES musteriler (id) ON DELETE CASCADE,
   type cari_tx_type NOT NULL,
   amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
   description VARCHAR(255),
-  pos_sale_id BIGINT REFERENCES pos_sales (id) ON DELETE SET NULL,
+  pos_sale_id BIGINT REFERENCES pos_satislar (id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

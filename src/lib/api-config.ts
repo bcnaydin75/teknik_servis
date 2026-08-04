@@ -7,10 +7,6 @@ import {
 /** @deprecated normalize-api-base-url modülünü kullanın */
 export { CPANEL_API_BASE_URL, normalizeApiBaseUrl };
 
-/** Yerel Laragon geliştirme */
-export const LOCAL_API_BASE_URL =
-  "http://127.0.0.1/teknik_servis_projesi/backend";
-
 /** Ortam değişkeni yoksa cPanel kullanılır */
 export const DEFAULT_API_BASE_URL = CPANEL_API_BASE_URL;
 
@@ -64,17 +60,4 @@ export function getAppOrigin(): string {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
   return DEFAULT_APP_URL;
-}
-
-/** Backend'den gelen göreli dosya yolunu tam URL'ye çevirir */
-export function resolveBackendAssetUrl(path: string | null | undefined): string | null {
-  if (!path?.trim()) return null;
-  if (/^https?:\/\//i.test(path)) return path;
-  const relative = path.replace(/^\//, "");
-
-  if (typeof window !== "undefined") {
-    return new URL(`/backend/${relative}`, window.location.origin).href;
-  }
-
-  return `${getApiBaseUrl()}/${relative}`;
 }

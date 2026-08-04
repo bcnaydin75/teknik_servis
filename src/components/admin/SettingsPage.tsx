@@ -71,6 +71,7 @@ export default function SettingsPage() {
       setIsSuperadmin(Boolean(authRes.data.is_superadmin));
       setCanManageStaff(Boolean(authRes.data.permissions?.manage_staff));
       if (authRes.data.is_superadmin) {
+        setTab("personel");
         setNewStaff((s) => ({ ...s, role: "admin" }));
       }
     }
@@ -251,6 +252,17 @@ export default function SettingsPage() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{t("admin.settings.firma.companyName")}</label>
             <input value={shop.firma_adi} onChange={(e) => setShop({ ...shop, firma_adi: e.target.value })} required className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
           </div>
+          {(shop.takip_oneki || shop.takip_ornek) && (
+            <div className="rounded-xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200 dark:bg-slate-900/50 dark:ring-slate-700">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                {t("admin.settings.firma.trackingPrefix")}
+              </p>
+              <p className="mt-1 font-mono text-lg font-bold tracking-wide text-blue-600 dark:text-blue-400">
+                {shop.takip_ornek ?? `${shop.takip_oneki}-??-001`}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">{t("admin.settings.firma.trackingPrefixHint")}</p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{t("admin.settings.firma.address")}</label>
             <textarea value={shop.adres ?? ""} onChange={(e) => setShop({ ...shop, adres: e.target.value })} rows={2} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />

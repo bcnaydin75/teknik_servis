@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import type { Permissions } from "@/lib/permissions";
 import { isAccountOwner, type StaffRole } from "@/lib/permissions";
+import { Tables } from "./db-tables";
+import { allocateUniqueShopPrefix } from "./tracking-code";
 import { getSupabaseAdmin } from "./supabase";
 import type { SessionData } from "./session";
 import { getSessionFromCookies } from "./session";
@@ -26,7 +28,7 @@ export interface AdminUserRow {
 export async function loadAdminUser(userId: number): Promise<AdminUserRow | null> {
   const db = getSupabaseAdmin();
   const { data, error } = await db
-    .from("admin_users")
+    .from(Tables.yoneticiKullanicilar)
     .select(
       "id, username, role, ad_soyad, aktif, must_change_password, tenant_id, is_superadmin"
     )
@@ -162,7 +164,7 @@ export async function createShopOwnerUser(input: {
   const db = getSupabaseAdmin();
 
   const { data: inserted, error } = await db
-    .from("admin_users")
+    .from(Tables.yoneticiKullanicilar)
     .insert({
       username: input.username,
       password_hash: input.passwordHash,
@@ -181,11 +183,17 @@ export async function createShopOwnerUser(input: {
 
   const shopOwnerId = inserted.id;
 
-  await db.from("admin_users").update({ tenant_id: shopOwnerId }).eq("id", shopOwnerId);
+  await db.from(Tables.yoneticiKullanicilar).update({ tenant_id: shopOwnerId }).eq("id", shopOwnerId);
 
-  await db.from("shop_settings").insert({
+  const takipOneki = await allocateUniqueShopPrefix(
+    input.firmaAdi.trim(),
+    input.username
+  );
+
+  await db.from(Tables.dukkanAyarlari).insert({
     tenant_id: shopOwnerId,
     firma_adi: input.firmaAdi.trim(),
+    takip_oneki: takipOneki,
   });
 
   return { ok: true, id: shopOwnerId };

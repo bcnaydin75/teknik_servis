@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requireSession } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
 import { applyTenantFilter, resolveTenantScope, requireWriteTenantId, withScopedId } from "../tenant-context";
+import { Tables } from "../db-tables";
+import { generateNextTrackingCode } from "../tracking-code";
 import { getSupabaseAdmin } from "../supabase";
 
 function parseParts(raw: unknown): string[] {
@@ -69,8 +71,8 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
 
   let query = applyTenantFilter(
     db
-      .from("repairs")
-      .select("*, customers!inner(*)")
+      .from(Tables.tamirKayitlari)
+      .select(`*, ${Tables.musteriler}!inner(*)`)
       .eq("arsivlendi", archived)
       .order("guncelleme_tarihi", { ascending: false }),
     scope
@@ -78,7 +80,7 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
 
   if (q) {
     query = query.or(
-      `takip_kodu.ilike.%${q}%,cihaz_modeli.ilike.%${q}%,customers.ad_soyad.ilike.%${q}%`
+      `takip_kodu.ilike.%${q}%,cihaz_modeli.ilike.%${q}%,${Tables.musteriler}.ad_soyad.ilike.%${q}%`
     );
   }
 
@@ -95,8 +97,8 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
   }
 
   let devices = filtered.map((row) => {
-    const customer = (row.customers ?? {}) as Record<string, unknown>;
-    const { customers: _, ...repair } = row as Record<string, unknown>;
+    const customer = (row[Tables.musteriler] ?? {}) as Record<string, unknown>;
+    const { [Tables.musteriler]: _, ...repair } = row as Record<string, unknown>;
     return mapDevice(repair, customer);
   });
 
@@ -105,7 +107,7 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
   }
 
   const { data: activeRows } = await applyTenantFilter(
-    db.from("repairs").select("cihaz_durumu, arsivlendi").eq("arsivlendi", false),
+    db.from(Tables.tamirKayitlari).select("cihaz_durumu, arsivlendi").eq("arsivlendi", false),
     scope
   );
 
@@ -121,7 +123,7 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
 
   if (archived && !year && !month) {
     const { data: archivedRows } = await applyTenantFilter(
-      db.from("repairs").select("arsiv_tarihi").eq("arsivlendi", true),
+      db.from(Tables.tamirKayitlari).select("arsiv_tarihi").eq("arsivlendi", true),
       scope
     );
 
@@ -164,7 +166,7 @@ export async function handleDashboardStats(): Promise<NextResponse> {
 
   const { data: repairs } = await applyTenantFilter(
     db
-      .from("repairs")
+      .from(Tables.tamirKayitlari)
       .select("cihaz_durumu, arsivlendi, olusturma_tarihi")
       .eq("arsivlendi", false),
     scope
@@ -194,7 +196,7 @@ export async function handleDashboardStats(): Promise<NextResponse> {
 
   const { data: posToday } = await applyTenantFilter(
     db
-      .from("pos_sales")
+      .from(Tables.posSatislar)
       .select("total_amount")
       .gte("created_at", today.toISOString())
       .lt("created_at", tomorrow.toISOString()),
@@ -225,7 +227,7 @@ export async function handleAddDevice(request: NextRequest): Promise<NextRespons
     tenantId = write.tenantId;
   } else if (scope.mode === "all") {
     const { data: owners } = await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .select("id, tenant_id")
       .eq("role", "admin")
       .eq("is_superadmin", false);
@@ -258,7 +260,7 @@ export async function handleAddDevice(request: NextRequest): Promise<NextRespons
   let customerId: number | null = null;
   if (telefon) {
     const { data: existing } = await db
-      .from("customers")
+      .from(Tables.musteriler)
       .select("id")
       .eq("tenant_id", tenantId)
       .eq("telefon", telefon)
@@ -268,7 +270,7 @@ export async function handleAddDevice(request: NextRequest): Promise<NextRespons
 
   if (!customerId) {
     const { data: created, error } = await db
-      .from("customers")
+      .from(Tables.musteriler)
       .insert({
         tenant_id: tenantId,
         ad_soyad: adSoyad,
@@ -281,22 +283,9 @@ export async function handleAddDevice(request: NextRequest): Promise<NextRespons
     customerId = created.id;
   }
 
-  const prefix = `TS-${new Date().getFullYear()}-`;
-  const { data: last } = await db
-    .from("repairs")
-    .select("takip_kodu")
-    .eq("tenant_id", tenantId)
-    .like("takip_kodu", `${prefix}%`)
-    .order("id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const takipKodu = await generateNextTrackingCode(tenantId);
 
-  let seq = 1;
-  const m = last?.takip_kodu?.match(/-(\d+)$/);
-  if (m) seq = parseInt(m[1], 10) + 1;
-  const takipKodu = `${prefix}${String(seq).padStart(3, "0")}`;
-
-  const { error: insertErr } = await db.from("repairs").insert({
+  const { error: insertErr } = await db.from(Tables.tamirKayitlari).insert({
     tenant_id: tenantId,
     customer_id: customerId,
     takip_kodu: takipKodu,
@@ -322,7 +311,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
 
   if (!id) return jsonFail("Geçersiz cihaz.", 400);
 
-  let fetchQuery = db.from("repairs").select("*, customers(*)").eq("id", id);
+  let fetchQuery = db.from(Tables.tamirKayitlari).select(`*, ${Tables.musteriler}(*)`).eq("id", id);
   if (scope.mode === "shop") {
     fetchQuery = fetchQuery.eq("tenant_id", scope.tenantId);
   }
@@ -342,7 +331,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
 
   if (inventoryIds.length) {
     const { data: items } = await db
-      .from("inventory")
+      .from(Tables.stok)
       .select("id, part_name, stock_quantity, sell_price")
       .eq("tenant_id", tenantId)
       .in("id", inventoryIds);
@@ -350,7 +339,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
     for (const item of items ?? []) {
       if (!oldParts.includes(item.part_name) && item.stock_quantity > 0) {
         await db
-          .from("inventory")
+          .from(Tables.stok)
           .update({ stock_quantity: item.stock_quantity - 1 })
           .eq("id", item.id);
       }
@@ -366,7 +355,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
 
   const newStatus = body.cihaz_durumu ?? existing.cihaz_durumu;
 
-  const { error } = await withScopedId(db.from("repairs").update({
+  const { error } = await withScopedId(db.from(Tables.tamirKayitlari).update({
       cihaz_durumu: newStatus,
       degisen_parcalar: newPartNames,
       parca_ucreti: Number(body.parca_ucreti ?? existing.parca_ucreti),
@@ -385,7 +374,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
     existing.cihaz_durumu !== "teslim_edildi" &&
     toplam > 0
   ) {
-    await db.from("transactions").insert({
+    await db.from(Tables.finansIslemleri).insert({
       tenant_id: tenantId,
       type: "income",
       amount: toplam,
@@ -399,7 +388,7 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
       const months = Number(w.garanti_ay ?? 3);
       const end = new Date(start);
       end.setMonth(end.getMonth() + months);
-      await db.from("warranties").insert({
+      await db.from(Tables.garantiler).insert({
         tenant_id: tenantId,
         customer_id: existing.customer_id,
         repair_id: id,
@@ -431,7 +420,7 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
 
   if (action === "archive") {
     const { error } = await withScopedId(
-      db.from("repairs").update({ arsivlendi: true, arsiv_tarihi: new Date().toISOString() }),
+      db.from(Tables.tamirKayitlari).update({ arsivlendi: true, arsiv_tarihi: new Date().toISOString() }),
       scope,
       id
     );
@@ -441,7 +430,7 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
 
   if (action === "restore") {
     const { error } = await withScopedId(
-      db.from("repairs").update({ arsivlendi: false, arsiv_tarihi: null }),
+      db.from(Tables.tamirKayitlari).update({ arsivlendi: false, arsiv_tarihi: null }),
       scope,
       id
     );
@@ -450,7 +439,7 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
   }
 
   if (action === "permanent_delete") {
-    const { error } = await withScopedId(db.from("repairs").delete(), scope, id);
+    const { error } = await withScopedId(db.from(Tables.tamirKayitlari).delete(), scope, id);
     if (error) return jsonFail("Silinemedi.", 500);
     return jsonOk({ message: "Cihaz kalıcı olarak silindi." });
   }
@@ -468,8 +457,8 @@ export async function handleRepairStatus(
   const shop = (request.nextUrl.searchParams.get("shop") ?? "").trim();
 
   let query = db
-    .from("repairs")
-    .select("*, customers!inner(ad_soyad)")
+    .from(Tables.tamirKayitlari)
+    .select(`*, ${Tables.musteriler}!inner(ad_soyad)`)
     .eq("takip_kodu", takipKodu);
 
   if (shop) {
@@ -481,7 +470,7 @@ export async function handleRepairStatus(
   const { data: row, error } = await query.maybeSingle();
   if (error || !row) return jsonFail("Kayıt bulunamadı.", 404);
 
-  const customer = row.customers as { ad_soyad: string };
+  const customer = row[Tables.musteriler] as { ad_soyad: string };
   const settingsTenant = row.tenant_id as number;
   const { getShopSettingsForTenant } = await import("../shop-settings");
   const shopSettings = await getShopSettingsForTenant(settingsTenant);

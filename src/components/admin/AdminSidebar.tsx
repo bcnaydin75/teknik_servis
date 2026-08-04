@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { checkAuth, logoutAdmin } from "@/lib/auth-api";
 import { ADMIN_BRAND_LOGO } from "@/lib/brand";
 import ThemeToggle from "@/components/ThemeToggle";
+import LogoutConfirmDialog from "./LogoutConfirmDialog";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import {
   ADMIN_NAV_ITEMS,
@@ -28,6 +29,8 @@ export default function AdminSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMISSIONS);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     checkAuth().then((res) => {
@@ -39,11 +42,18 @@ export default function AdminSidebar({
 
   const navItems = filterNavByPermissions(ADMIN_NAV_ITEMS, perms);
 
-  async function handleLogout() {
+  async function confirmLogout() {
+    setLoggingOut(true);
     onMobileClose?.();
     await logoutAdmin();
+    setLoggingOut(false);
+    setLogoutOpen(false);
     router.replace("/admin/login");
     router.refresh();
+  }
+
+  function handleLogoutClick() {
+    setLogoutOpen(true);
   }
 
   function handleNavClick() {
@@ -123,7 +133,7 @@ export default function AdminSidebar({
         </Link>
         <button
           type="button"
-          onClick={handleLogout}
+          onClick={handleLogoutClick}
           className="flex min-h-[44px] w-full touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-red-900/30 hover:text-red-300"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -161,6 +171,12 @@ export default function AdminSidebar({
           </aside>
         </div>
       )}
+      <LogoutConfirmDialog
+        open={logoutOpen}
+        loading={loggingOut}
+        onConfirm={confirmLogout}
+        onCancel={() => setLogoutOpen(false)}
+      />
     </>
   );
 }

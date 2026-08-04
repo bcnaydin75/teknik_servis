@@ -6,6 +6,7 @@ import {
   resolveTenantIdByShopSlug,
 } from "../shop-settings";
 import { getSupabaseAdmin } from "../supabase";
+import { Tables } from "../db-tables";
 
 export async function handlePublicSettings(
   request: NextRequest
@@ -47,7 +48,7 @@ export async function handlePublicSettings(
     const db = getSupabaseAdmin();
     const { data: row } = tenantId
       ? await db
-          .from("shop_settings")
+          .from(Tables.dukkanAyarlari)
           .select("logo_path")
           .eq("tenant_id", tenantId)
           .maybeSingle()

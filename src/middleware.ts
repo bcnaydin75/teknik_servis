@@ -53,6 +53,15 @@ export async function middleware(request: NextRequest) {
       }
 
       const perms = data.data?.permissions ?? {};
+      const isSuperadmin = Boolean(data.data?.is_superadmin);
+
+      if (
+        isSuperadmin &&
+        !pathname.startsWith("/admin/settings") &&
+        !pathname.startsWith("/admin/login")
+      ) {
+        return NextResponse.redirect(new URL("/admin/settings", request.url));
+      }
 
       for (const [route, perm] of Object.entries(ROUTE_PERMS)) {
         if (pathname.startsWith(route) && !perms[perm]) {

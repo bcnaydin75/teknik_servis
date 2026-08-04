@@ -8,6 +8,7 @@ import {
   withScopedId,
 } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
+import { Tables } from "../db-tables";
 
 export async function handleInventory(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("inventory");
@@ -19,7 +20,7 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
 
   if (request.method === "GET") {
     const { data: rows } = await applyTenantFilter(
-      db.from("inventory").select("*, suppliers(firma_adi)").order("part_name", { ascending: true }),
+      db.from(Tables.stok).select(`*, ${Tables.tedarikciler}(firma_adi)`).order("part_name", { ascending: true }),
       scope
     );
 
@@ -30,7 +31,7 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
       sell_price: Number(r.sell_price ?? 0),
       stock_quantity: r.stock_quantity,
       supplier_id: r.supplier_id,
-      supplier_name: (r.suppliers as { firma_adi?: string } | null)?.firma_adi ?? null,
+      supplier_name: (r[Tables.tedarikciler] as { firma_adi?: string } | null)?.firma_adi ?? null,
       created_at: r.created_at,
     }));
 
@@ -53,7 +54,7 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
 
     if (action === "update" && body.id) {
       const { error } = await withScopedId(
-        db.from("inventory").update(payload),
+        db.from(Tables.stok).update(payload),
         scope,
         Number(body.id)
       );
@@ -64,7 +65,7 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
     const write = requireWriteTenantId(scope, { bodyTenantId: Number(body.tenant_id) || undefined });
     if (!write.ok) return jsonFail(write.message, write.status);
 
-    const { error } = await db.from("inventory").insert({
+    const { error } = await db.from(Tables.stok).insert({
       ...payload,
       tenant_id: write.tenantId,
     });
@@ -84,7 +85,7 @@ export async function handleFinance(): Promise<NextResponse> {
   const db = getSupabaseAdmin();
 
   const { data: rows } = await applyTenantFilter(
-    db.from("transactions").select("*").order("created_at", { ascending: false }).limit(200),
+    db.from(Tables.finansIslemleri).select("*").order("created_at", { ascending: false }).limit(200),
     scope
   );
 

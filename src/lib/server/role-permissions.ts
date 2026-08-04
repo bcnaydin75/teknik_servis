@@ -27,9 +27,13 @@ const SHOP_ALL: Permissions = {
   see_finance: true,
 };
 
-/** Platform geliştirici: tüm panellere erişir + dükkan yöneticisi yönetimi */
+/** Platform geliştirici: dükkan verisi yok, yalnızca dükkan yöneticisi yönetimi */
 export function getSuperadminPermissions(): Permissions {
-  return { ...SHOP_ALL };
+  return {
+    ...SHOP_NONE,
+    settings: true,
+    manage_staff: true,
+  };
 }
 
 export function getRolePermissions(role: string): Permissions {

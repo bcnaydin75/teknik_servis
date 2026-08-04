@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBaseUrl } from "@/lib/normalize-api-base-url";
 import { nextResponseFromUpstream } from "@/lib/proxy-response";
-import { handleNativeApi } from "@/lib/server/native-api";
+import { handleNativeApi, isNativeApiEnabled } from "@/lib/server/native-api";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -83,6 +83,18 @@ async function handle(request: NextRequest, context: RouteContext) {
 
   const native = await handleNativeApi(request, joined);
   if (native) return native;
+
+  // PHP backend kaldırıldı — native Supabase şart
+  if (!isNativeApiEnabled()) {
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          "SUPABASE_URL ve SUPABASE_SERVICE_ROLE_KEY eksik. .env.local veya Vercel Environment Variables ekleyin.",
+      },
+      { status: 503 }
+    );
+  }
 
   return proxyToBackend(request, path, "/api/");
 }

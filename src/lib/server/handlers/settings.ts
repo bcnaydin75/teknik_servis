@@ -15,7 +15,9 @@ import {
   normalizeLocale,
 } from "../shop-settings";
 import { getSupabaseAdmin } from "../supabase";
+import { Tables } from "../db-tables";
 import { isShopOwnerUser, requireShopTenant } from "../tenant-context";
+import { ensureShopTrackingPrefix, formatTrackingCodeExample } from "../tracking-code";
 
 function isShopOwnerRow(row: { id: number; tenant_id: number | null }): boolean {
   return row.tenant_id != null && row.id === row.tenant_id;
@@ -33,10 +35,18 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     }
     const shop = requireShopTenant(auth.user);
     if (!shop.ok) return jsonFail(shop.message, shop.status);
+    await ensureShopTrackingPrefix(shop.tenantId);
     const data = await getShopSettingsForTenant(shop.tenantId, {
       includeLogoQuery: true,
     });
-    return jsonOk({ data });
+    return jsonOk({
+      data: {
+        ...data,
+        takip_ornek: data.takip_oneki
+          ? formatTrackingCodeExample(data.takip_oneki)
+          : null,
+      },
+    });
   }
 
   if (action === "profile" && request.method === "POST") {
@@ -65,7 +75,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     }
 
     await db
-      .from("shop_settings")
+      .from(Tables.dukkanAyarlari)
       .update(update)
       .eq("tenant_id", shop.tenantId);
 
@@ -114,7 +124,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     }
 
     await db
-      .from("shop_settings")
+      .from(Tables.dukkanAyarlari)
       .update({ logo_path: path, guncelleme_tarihi: new Date().toISOString() })
       .eq("tenant_id", shop.tenantId);
 
@@ -130,7 +140,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
 
     if (auth.user.is_superadmin) {
       const { data: rows } = await db
-        .from("admin_users")
+        .from(Tables.yoneticiKullanicilar)
         .select("id, username, role, ad_soyad, aktif, olusturma_tarihi, tenant_id, is_superadmin")
         .eq("role", "admin")
         .eq("is_superadmin", false)
@@ -142,7 +152,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
       const shopByTenant = new Map<number, string>();
       if (ownerIds.length > 0) {
         const { data: shops } = await db
-          .from("shop_settings")
+          .from(Tables.dukkanAyarlari)
           .select("tenant_id, firma_adi")
           .in("tenant_id", ownerIds);
         for (const s of shops ?? []) {
@@ -168,7 +178,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     if (!shop.ok) return jsonFail(shop.message, shop.status);
 
     const { data: rows } = await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .select("id, username, role, ad_soyad, aktif, olusturma_tarihi, tenant_id")
       .eq("tenant_id", shop.tenantId)
       .order("id", { ascending: true });
@@ -232,7 +242,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     const shop = requireShopTenant(auth.user);
     if (!shop.ok) return jsonFail(shop.message, shop.status);
 
-    const { error } = await db.from("admin_users").insert({
+    const { error } = await db.from(Tables.yoneticiKullanicilar).insert({
       username,
       password_hash: await hashPassword(password),
       role,
@@ -259,7 +269,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
 
     if (auth.user.is_superadmin) {
       const { data: target } = await db
-        .from("admin_users")
+        .from(Tables.yoneticiKullanicilar)
         .select("id, role, tenant_id, is_superadmin")
         .eq("id", id)
         .maybeSingle();
@@ -285,13 +295,13 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
         update.must_change_password = false;
       }
 
-      const { error } = await db.from("admin_users").update(update).eq("id", id);
+      const { error } = await db.from(Tables.yoneticiKullanicilar).update(update).eq("id", id);
       if (error) return jsonFail("Güncellenemedi.", 500);
 
       const nextFirma = (body.firma_adi ?? "").trim();
       if (nextFirma) {
         await db
-          .from("shop_settings")
+          .from(Tables.dukkanAyarlari)
           .update({ firma_adi: nextFirma, guncelleme_tarihi: new Date().toISOString() })
           .eq("tenant_id", id);
       }
@@ -303,7 +313,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     if (!shop.ok) return jsonFail(shop.message, shop.status);
 
     const { data: target } = await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .select("id, role, tenant_id")
       .eq("id", id)
       .eq("tenant_id", shop.tenantId)
@@ -338,7 +348,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     }
 
     const { error } = await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .update(update)
       .eq("id", id)
       .eq("tenant_id", shop.tenantId);
@@ -360,7 +370,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
 
     if (auth.user.is_superadmin) {
       const { data: target } = await db
-        .from("admin_users")
+        .from(Tables.yoneticiKullanicilar)
         .select("id, username, tenant_id, is_superadmin")
         .eq("id", id)
         .maybeSingle();
@@ -369,7 +379,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
         return jsonFail("Dükkan yöneticisi bulunamadı.", 404);
       }
 
-      await db.from("admin_users").delete().eq("id", id);
+      await db.from(Tables.yoneticiKullanicilar).delete().eq("id", id);
       return jsonOk({
         message: "Dükkan yöneticisi ve tüm dükkan verisi kalıcı olarak silindi.",
         data: { username: target.username },
@@ -380,7 +390,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     if (!shop.ok) return jsonFail(shop.message, shop.status);
 
     const { data: target } = await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .select("id, username, role, tenant_id")
       .eq("id", id)
       .eq("tenant_id", shop.tenantId)
@@ -392,7 +402,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
       return jsonFail("Dükkan sahibi silinemez.", 400);
     }
 
-    await db.from("admin_users").delete().eq("id", id);
+    await db.from(Tables.yoneticiKullanicilar).delete().eq("id", id);
     return jsonOk({
       message: "Personel kalıcı olarak silindi.",
       data: { username: target.username },
@@ -409,7 +419,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     if (pwdErr) return jsonFail(pwdErr, 400);
 
     const { data: user } = await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .select("password_hash")
       .eq("id", auth.user.id)
       .single();
@@ -419,7 +429,7 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     }
 
     await db
-      .from("admin_users")
+      .from(Tables.yoneticiKullanicilar)
       .update({
         password_hash: await hashPassword(newPassword),
         must_change_password: false,

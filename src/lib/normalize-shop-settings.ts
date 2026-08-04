@@ -22,5 +22,7 @@ export function normalizeShopSettings(raw: Record<string, unknown>): ShopSetting
       null,
     default_locale: raw.default_locale as string | undefined,
     ucret_detayi_goster,
+    takip_oneki: (raw.takip_oneki as string | null) ?? null,
+    takip_ornek: (raw.takip_ornek as string | null) ?? null,
   };
 }

@@ -3,6 +3,7 @@ import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
 import { applyTenantFilter, resolveTenantScope, withScopedId } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
+import { Tables } from "../db-tables";
 
 export async function handleCheckCustomer(
   request: NextRequest
@@ -16,7 +17,7 @@ export async function handleCheckCustomer(
   const telefon = (request.nextUrl.searchParams.get("telefon") ?? "").trim();
   const adSoyad = (request.nextUrl.searchParams.get("ad_soyad") ?? "").trim();
 
-  let query = applyTenantFilter(db.from("customers").select("*"), scope);
+  let query = applyTenantFilter(db.from(Tables.musteriler).select("*"), scope);
 
   if (telefon) {
     query = query.eq("telefon", telefon);
@@ -31,7 +32,7 @@ export async function handleCheckCustomer(
 
   const today = new Date().toISOString().slice(0, 10);
   const { data: warranties } = await db
-    .from("warranties")
+    .from(Tables.garantiler)
     .select("*")
     .eq("customer_id", customer.id)
     .gte("bitis_tarihi", today);
@@ -72,7 +73,7 @@ export async function handleUpdateCustomer(
 
   const db = getSupabaseAdmin();
   const { error } = await withScopedId(
-    db.from("customers").update({
+    db.from(Tables.musteriler).update({
       riskli_musteri: Boolean(body.riskli_musteri),
       risk_notu: (body.risk_notu ?? "").trim() || null,
     }),

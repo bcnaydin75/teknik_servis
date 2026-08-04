@@ -27,8 +27,13 @@ if (!url || !key) {
 const db = createClient(url, key, { auth: { persistSession: false } });
 const hash = await bcrypt.hash(password, 10);
 
+const Tables = {
+  yoneticiKullanicilar: "yonetici_kullanicilar",
+  dukkanAyarlari: "dukkan_ayarlari",
+};
+
 const { data: user, error } = await db
-  .from("admin_users")
+  .from(Tables.yoneticiKullanicilar)
   .insert({
     username,
     password_hash: hash,
@@ -43,9 +48,9 @@ if (error) {
   process.exit(1);
 }
 
-await db.from("admin_users").update({ tenant_id: user.id }).eq("id", user.id);
+await db.from(Tables.yoneticiKullanicilar).update({ tenant_id: user.id }).eq("id", user.id);
 
-await db.from("shop_settings").upsert(
+await db.from(Tables.dukkanAyarlari).upsert(
   {
     tenant_id: user.id,
     firma_adi: "Teknik Servis",

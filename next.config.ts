@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-/** API proxy: src/app/api/[...path]/route.ts ve src/app/backend/[...path]/route.ts */
+/** API: src/app/api/[...path]/route.ts (native Supabase + opsiyonel proxy) */
 const nextConfig: NextConfig = {
   devIndicators: false,
 };

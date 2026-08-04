@@ -7,6 +7,7 @@ import {
   requireWriteTenantId,
 } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
+import { Tables } from "../db-tables";
 
 export async function handleSuppliers(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("suppliers");
@@ -18,14 +19,14 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
 
   if (request.method === "GET") {
     const { data: suppliers } = await applyTenantFilter(
-      db.from("suppliers").select("*").order("firma_adi", { ascending: true }),
+      db.from(Tables.tedarikciler).select("*").order("firma_adi", { ascending: true }),
       scope
     );
 
     const { data: txRows } = await applyTenantFilter(
       db
-        .from("supplier_transactions")
-        .select("*, suppliers(firma_adi)")
+        .from(Tables.tedarikciIslemleri)
+        .select(`*, ${Tables.tedarikciler}(firma_adi)`)
         .order("created_at", { ascending: false })
         .limit(100),
       scope
@@ -56,7 +57,7 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
     const transactions = (txRows ?? []).map((t) => ({
       id: t.id,
       supplier_id: t.supplier_id,
-      firma_adi: (t.suppliers as { firma_adi: string }).firma_adi,
+      firma_adi: (t[Tables.tedarikciler] as { firma_adi: string }).firma_adi,
       type: t.type,
       amount: Number(t.amount),
       description: t.description,
@@ -78,7 +79,7 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
       const firma = (body.firma_adi ?? "").trim();
       if (!firma) return jsonFail("Firma adı zorunludur.", 400);
 
-      const { error } = await db.from("suppliers").insert({
+      const { error } = await db.from(Tables.tedarikciler).insert({
         tenant_id: tenantId,
         firma_adi: firma,
         telefon: (body.telefon ?? "").trim() || null,
@@ -99,7 +100,7 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
         return jsonFail("Geçersiz işlem.", 400);
       }
 
-      await db.from("supplier_transactions").insert({
+      await db.from(Tables.tedarikciIslemleri).insert({
         tenant_id: tenantId,
         supplier_id: supplierId,
         type,

@@ -2,7 +2,7 @@
 -- Dükkan sahibi değildir; yalnızca dükkan adminleri oluşturur.
 -- Supabase SQL Editor'de bir kez çalıştırın.
 
-INSERT INTO admin_users (username, password_hash, role, aktif, must_change_password, is_superadmin)
+INSERT INTO yonetici_kullanicilar (username, password_hash, role, aktif, must_change_password, is_superadmin)
 VALUES (
   'bcnaydin75',
   '$2b$10$gWHO7dnX1VvhZUPycsX.9u5kHNkoN4B.SgPq/EayqzaPiRGtIhCi2',
@@ -18,9 +18,9 @@ ON CONFLICT (username) DO UPDATE SET
   is_superadmin = TRUE,
   tenant_id = NULL;
 
-UPDATE admin_users
+UPDATE yonetici_kullanicilar
 SET tenant_id = NULL, is_superadmin = TRUE
 WHERE username ILIKE 'bcnaydin75';
 
-DELETE FROM shop_settings
-WHERE tenant_id IN (SELECT id FROM admin_users WHERE username ILIKE 'bcnaydin75');
+DELETE FROM dukkan_ayarlari
+WHERE tenant_id IN (SELECT id FROM yonetici_kullanicilar WHERE username ILIKE 'bcnaydin75');

@@ -3,6 +3,7 @@ import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
 import { applyTenantFilter, resolveTenantScope } from "../tenant-context";
 import { getSupabaseAdmin } from "../supabase";
+import { Tables } from "../db-tables";
 
 export async function handlePos(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("pos");
@@ -15,7 +16,7 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
   if (request.method === "GET") {
     const { data: rows } = await applyTenantFilter(
       db
-        .from("inventory")
+        .from(Tables.stok)
         .select("id, part_name, sell_price, stock_quantity")
         .gt("stock_quantity", 0)
         .order("part_name"),
@@ -46,7 +47,7 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
     for (const item of items) {
       const invId = Number(item.inventory_id);
       const qty = Number(item.quantity ?? 1);
-      let invQuery = db.from("inventory").select("*").eq("id", invId);
+      let invQuery = db.from(Tables.stok).select("*").eq("id", invId);
       if (scope.mode === "shop") {
         invQuery = invQuery.eq("tenant_id", scope.tenantId);
       }
@@ -75,7 +76,7 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
     if (!tenantId) return jsonFail("Dükkan bağlamı bulunamadı.", 400);
 
     const { data: sale, error: saleErr } = await db
-      .from("pos_sales")
+      .from(Tables.posSatislar)
       .insert({
         tenant_id: tenantId,
         customer_id: customerId,
@@ -90,26 +91,26 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
     if (saleErr || !sale) return jsonFail("Satış kaydedilemedi.", 500);
 
     for (const line of saleItems) {
-      await db.from("pos_sale_items").insert({
+      await db.from(Tables.posSatisKalemleri).insert({
         sale_id: sale.id,
         ...line,
       });
 
       const { data: inv } = await db
-        .from("inventory")
+        .from(Tables.stok)
         .select("stock_quantity")
         .eq("id", line.inventory_id)
         .single();
 
       if (inv) {
         await db
-          .from("inventory")
+          .from(Tables.stok)
           .update({ stock_quantity: inv.stock_quantity - line.quantity })
           .eq("id", line.inventory_id);
       }
     }
 
-    await db.from("transactions").insert({
+    await db.from(Tables.finansIslemleri).insert({
       tenant_id: tenantId,
       type: "income",
       amount: total,
@@ -118,18 +119,18 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
 
     if (paymentType === "veresiye" && customerId) {
       const { data: cust } = await db
-        .from("customers")
+        .from(Tables.musteriler)
         .select("cari_bakiye")
         .eq("id", customerId)
         .single();
 
       if (cust) {
         await db
-          .from("customers")
+          .from(Tables.musteriler)
           .update({ cari_bakiye: Number(cust.cari_bakiye) + total })
           .eq("id", customerId);
 
-        await db.from("customer_transactions").insert({
+        await db.from(Tables.cariIslemleri).insert({
           tenant_id: tenantId,
           customer_id: customerId,
           type: "borc",
@@ -160,7 +161,7 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
 
   if (action === "list" && request.method === "GET") {
     const { data: rows } = await applyTenantFilter(
-      db.from("customers").select("*").neq("cari_bakiye", 0).order("ad_soyad"),
+      db.from(Tables.musteriler).select("*").neq("cari_bakiye", 0).order("ad_soyad"),
       scope
     );
 
@@ -173,7 +174,7 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
 
     const { data: rows } = await applyTenantFilter(
       db
-        .from("customers")
+        .from(Tables.musteriler)
         .select("*")
         .or(`ad_soyad.ilike.%${q}%,telefon.ilike.%${q}%`)
         .limit(20),
@@ -187,7 +188,7 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
     const customerId = Number(request.nextUrl.searchParams.get("customer_id"));
     if (!customerId) return jsonFail("Müşteri gerekli.", 400);
 
-    let customerQuery = db.from("customers").select("*").eq("id", customerId);
+    let customerQuery = db.from(Tables.musteriler).select("*").eq("id", customerId);
     if (scope.mode === "shop") {
       customerQuery = customerQuery.eq("tenant_id", scope.tenantId);
     }
@@ -196,7 +197,7 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
     if (!customer) return jsonFail("Müşteri bulunamadı.", 404);
 
     const { data: txs } = await db
-      .from("customer_transactions")
+      .from(Tables.cariIslemleri)
       .select("*")
       .eq("customer_id", customerId)
       .order("created_at", { ascending: false });
@@ -218,7 +219,7 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
       return jsonFail("Geçersiz tutar.", 400);
     }
 
-    let customerQuery = db.from("customers").select("cari_bakiye, tenant_id").eq("id", customerId);
+    let customerQuery = db.from(Tables.musteriler).select("cari_bakiye, tenant_id").eq("id", customerId);
     if (scope.mode === "shop") {
       customerQuery = customerQuery.eq("tenant_id", scope.tenantId);
     }
@@ -230,9 +231,9 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
     const delta = action === "borc" ? amount : -amount;
     const newBalance = Number(customer.cari_bakiye) + delta;
 
-    await db.from("customers").update({ cari_bakiye: newBalance }).eq("id", customerId);
+    await db.from(Tables.musteriler).update({ cari_bakiye: newBalance }).eq("id", customerId);
 
-    await db.from("customer_transactions").insert({
+    await db.from(Tables.cariIslemleri).insert({
       tenant_id: tenantId,
       customer_id: customerId,
       type: action,
@@ -241,7 +242,7 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
     });
 
     if (action === "odeme") {
-      await db.from("transactions").insert({
+      await db.from(Tables.finansIslemleri).insert({
         tenant_id: tenantId,
         type: "income",
         amount,

@@ -7,6 +7,10 @@ export interface ShopSettings {
   default_locale?: string;
   /** Müşteri takip sayfasında ücret detayı kutusu (varsayılan: göster) */
   ucret_detayi_goster?: boolean;
+  /** Dükkan takip kodu öneki (AYP, SXT) */
+  takip_oneki?: string | null;
+  /** Örnek tam kod (AYP-26-001) */
+  takip_ornek?: string | null;
 }
 
 export interface StaffMember {

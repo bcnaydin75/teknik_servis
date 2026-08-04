@@ -36,6 +36,7 @@ yarn-error.log*
 
 # legacy local folder (backend removed from repo)
 /frontend/
+/backend/
 
 # native binaries
 *.node
