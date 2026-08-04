@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Temiz PWA ikonları — brand-logo'yu daire maskeleyip düz slate zemine yerleştirir.
+ * PWA ikonları — sadece yuvarlak amblem, ikonu doldurur (kenar boşluğu yok).
  * Kullanım: node scripts/make-pwa-icons.mjs
  */
 import fs from "node:fs";
@@ -20,8 +20,6 @@ if (!fs.existsSync(srcPath)) {
 
 fs.mkdirSync(outDir, { recursive: true });
 
-const BG = { r: 15, g: 23, b: 42, alpha: 1 }; // #0f172a
-
 function circleMask(size) {
   const r = size / 2;
   return Buffer.from(
@@ -31,9 +29,13 @@ function circleMask(size) {
   );
 }
 
-/** Logo'yu kareye sığdır, daireye kes, düz zemine oturt */
-async function makeIcon(canvasSize, logoRatio, outFile) {
-  const logoSize = Math.round(canvasSize * logoRatio);
+/**
+ * Amblemi kareye cover ile sığdırıp daireye keser.
+ * ratio=1 → tam doldurur (any ikon).
+ * ratio<1 → maskable güvenli alan için hafif içe alır.
+ */
+async function makeIcon(canvasSize, fillRatio, outFile) {
+  const logoSize = Math.round(canvasSize * fillRatio);
 
   const squareLogo = await sharp(srcPath)
     .resize(logoSize, logoSize, {
@@ -45,21 +47,18 @@ async function makeIcon(canvasSize, logoRatio, outFile) {
     .toBuffer();
 
   const circular = await sharp(squareLogo)
-    .composite([
-      {
-        input: circleMask(logoSize),
-        blend: "dest-in",
-      },
-    ])
+    .composite([{ input: circleMask(logoSize), blend: "dest-in" }])
     .png()
     .toBuffer();
 
+  // Şeffaf kare canvas — Android/iOS köşeleri kendisi yuvarlar;
+  // ortada sadece dolu yuvarlak amblem kalır.
   await sharp({
     create: {
       width: canvasSize,
       height: canvasSize,
       channels: 4,
-      background: BG,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
     },
   })
     .composite([{ input: circular, gravity: "centre" }])
@@ -69,10 +68,12 @@ async function makeIcon(canvasSize, logoRatio, outFile) {
   console.log("wrote", path.relative(root, outFile));
 }
 
-await makeIcon(192, 0.92, path.join(outDir, "icon-192.png"));
-await makeIcon(512, 0.92, path.join(outDir, "icon-512.png"));
-await makeIcon(512, 0.72, path.join(outDir, "icon-maskable-512.png"));
-await makeIcon(180, 0.92, path.join(root, "public/apple-touch-icon.png"));
-await makeIcon(32, 0.94, path.join(root, "public/favicon.png"));
+// any: yuvarlak ikonu tamamen doldursun
+await makeIcon(192, 1, path.join(outDir, "icon-192.png"));
+await makeIcon(512, 1, path.join(outDir, "icon-512.png"));
+// maskable: OS maskesi için ~10% iç boşluk
+await makeIcon(512, 0.9, path.join(outDir, "icon-maskable-512.png"));
+await makeIcon(180, 1, path.join(root, "public/apple-touch-icon.png"));
+await makeIcon(32, 1, path.join(root, "public/favicon.png"));
 
-console.log("PWA ikonları güncellendi.");
+console.log("PWA ikonları güncellendi (sadece yuvarlak).");
