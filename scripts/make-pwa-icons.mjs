@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-/**
- * PWA ikonları — sadece ortalanmış yuvarlak amblem (ikonu doldurur).
- * Kullanım: node scripts/make-pwa-icons.mjs
- */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,25 +8,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const srcPath = path.join(root, "public/brand-logo.png");
 const outDir = path.join(root, "public/icons");
-
-if (!fs.existsSync(srcPath)) {
-  console.error("public/brand-logo.png bulunamadı");
-  process.exit(1);
-}
-
 fs.mkdirSync(outDir, { recursive: true });
 
 function circleMask(size) {
   const r = size / 2;
   return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
-      <circle cx="${r}" cy="${r}" r="${r}" fill="#fff"/>
-    </svg>`
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${r}" cy="${r}" r="${r}" fill="#fff"/></svg>`
   );
 }
 
-/** Kaynakta kaymış amblemi metalik/cyan piksellerden bulup ortala */
-async function extractCenteredBadge() {
+async function extractBadgeOnly() {
   const { data, info } = await sharp(srcPath)
     .raw()
     .ensureAlpha()
@@ -52,8 +39,8 @@ async function extractCenteredBadge() {
       const a = data[i + 3];
       const lum = (r + g + b) / 3;
       const isMetal =
-        a > 200 && lum > 100 && Math.abs(r - g) < 40 && Math.abs(g - b) < 50;
-      const isCyan = a > 200 && b > 100 && b > r + 15;
+        a > 200 && lum > 100 && Math.abs(r - g) < 40 && Math.abs(g - b) < 50 && r > 90;
+      const isCyan = a > 200 && b > 110 && b > r + 15;
       if (isMetal || isCyan) {
         sumX += x;
         sumY += y;
@@ -63,55 +50,71 @@ async function extractCenteredBadge() {
     }
   }
 
-  if (n < 100) {
-    // fallback: kare ortala
-    const side = Math.min(w, h);
-    return sharp(srcPath)
-      .extract({
-        left: Math.floor((w - side) / 2),
-        top: Math.floor((h - side) / 2),
-        width: side,
-        height: side,
-      })
-      .ensureAlpha()
-      .png()
-      .toBuffer();
-  }
-
   const cx = sumX / n;
   const cy = sumY / n;
   let maxR = 0;
-  for (const [x, y] of pts) {
-    maxR = Math.max(maxR, Math.hypot(x - cx, y - cy));
-  }
+  for (const [x, y] of pts) maxR = Math.max(maxR, Math.hypot(x - cx, y - cy));
 
-  const pad = 8;
-  let s = Math.ceil(maxR * 2) + pad * 2;
+  let s = Math.ceil(maxR * 2) + 10;
   s = Math.min(s, w, h);
-  let left = Math.round(cx - s / 2);
-  let top = Math.round(cy - s / 2);
-  left = Math.max(0, Math.min(w - s, left));
-  top = Math.max(0, Math.min(h - s, top));
+  let left = Math.max(0, Math.min(w - s, Math.round(cx - s / 2)));
+  let top = Math.max(0, Math.min(h - s, Math.round(cy - s / 2)));
   const finalS = Math.min(s, w - left, h - top);
 
-  return sharp(srcPath)
+  const crop = await sharp(srcPath)
     .extract({ left, top, width: finalS, height: finalS })
     .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const d = crop.data;
+  const cw = crop.info.width;
+  const ch = crop.info.height;
+
+  // Koyu navy zemini sil — gümüş halka + mavi dişli + yazı kalsın
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i];
+    const g = d[i + 1];
+    const b = d[i + 2];
+    const lum = (r + g + b) / 3;
+    const isCyan = b > 90 && b >= r;
+    const isMetal = lum > 80 && Math.abs(r - g) < 50 && r > 65;
+    const isBlueText = b > 50 && b >= g && b >= r - 10 && lum > 35 && lum < 160;
+    if (!isCyan && !isMetal && !isBlueText && lum < 70) {
+      d[i + 3] = 0;
+    }
+  }
+
+  const cleared = await sharp(d, {
+    raw: { width: cw, height: ch, channels: 4 },
+  })
+    .png()
+    .toBuffer();
+
+  const trimmed = await sharp(cleared).trim({ threshold: 5 }).png().toBuffer();
+  const meta = await sharp(trimmed).metadata();
+  const side = Math.max(meta.width ?? 1, meta.height ?? 1);
+
+  const squared = await sharp(trimmed)
+    .resize(side, side, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+
+  return sharp(squared)
+    .composite([{ input: circleMask(side), blend: "dest-in" }])
     .png()
     .toBuffer();
 }
 
 async function makeIcon(canvasSize, fillRatio, outFile) {
-  const badge = await extractCenteredBadge();
+  const badge = await extractBadgeOnly();
   const logoSize = Math.round(canvasSize * fillRatio);
 
   const resized = await sharp(badge)
-    .resize(logoSize, logoSize, { fit: "cover", position: "centre" })
-    .png()
-    .toBuffer();
-
-  const circular = await sharp(resized)
-    .composite([{ input: circleMask(logoSize), blend: "dest-in" }])
+    .resize(logoSize, logoSize, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
 
@@ -123,20 +126,37 @@ async function makeIcon(canvasSize, fillRatio, outFile) {
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     },
   })
-    .composite([{ input: circular, gravity: "centre" }])
+    .composite([{ input: resized, gravity: "centre" }])
     .png()
     .toFile(outFile);
 
   console.log("wrote", path.relative(root, outFile));
 }
 
-await makeIcon(192, 1, path.join(outDir, "icon-192.png"));
-await makeIcon(512, 1, path.join(outDir, "icon-512.png"));
-await makeIcon(512, 0.92, path.join(outDir, "icon-maskable-512.png"));
-await makeIcon(180, 1, path.join(root, "public/apple-touch-icon.png"));
-await makeIcon(32, 1, path.join(root, "public/favicon.png"));
+const badge = await extractBadgeOnly();
+await sharp(badge).resize(512, 512).png().toFile(path.join(outDir, "icon-512.png"));
+await sharp(badge).resize(192, 192).png().toFile(path.join(outDir, "icon-192.png"));
+await sharp(badge)
+  .resize(Math.round(512 * 0.9), Math.round(512 * 0.9), {
+    fit: "contain",
+    background: { r: 0, g: 0, b: 0, alpha: 0 },
+  })
+  .png()
+  .toBuffer()
+  .then((buf) =>
+    sharp({
+      create: { width: 512, height: 512, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .composite([{ input: buf, gravity: "centre" }])
+      .png()
+      .toFile(path.join(outDir, "icon-maskable-512.png"))
+  );
+await sharp(badge).resize(180, 180).png().toFile(path.join(root, "public/apple-touch-icon.png"));
+await sharp(badge).resize(32, 32).png().toFile(path.join(root, "public/favicon.png"));
 
-const preview = path.join(outDir, "_badge-preview.png");
-if (fs.existsSync(preview)) fs.unlinkSync(preview);
+for (const f of ["_t.png", "_t2.png", "_badge-preview.png"]) {
+  const p = path.join(outDir, f);
+  if (fs.existsSync(p)) fs.unlinkSync(p);
+}
 
-console.log("PWA ikonları güncellendi (sadece yuvarlak amblem).");
+console.log("done");
