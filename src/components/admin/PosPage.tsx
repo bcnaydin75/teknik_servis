@@ -6,6 +6,7 @@ import { fetchPosItems, searchCariCustomers, submitPosSale } from "@/lib/setting
 import type { CariCustomer, PosItem } from "@/types/settings";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency } from "@/lib/i18n/format";
+import { runAfterEffect } from "@/lib/run-after-effect";
 
 interface CartLine {
   item: PosItem;
@@ -34,7 +35,9 @@ export default function PosPage() {
   }, []);
 
   useEffect(() => {
-    load();
+    return runAfterEffect(() => {
+      void load();
+    });
   }, [load]);
 
   const subtotal = useMemo(

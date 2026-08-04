@@ -9,6 +9,7 @@ import { ADMIN_BRAND_LOGO } from "@/lib/brand";
 import { LOCALES, LOCALE_FLAGS, type Locale } from "@/lib/i18n/config";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { fetchPublicSettings } from "@/lib/settings-api";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import type { ShopSettings } from "@/types/settings";
 import PasswordInput from "./PasswordInput";
 import AdminLoginSkeleton from "./AdminLoginSkeleton";
@@ -97,9 +98,23 @@ export default function AdminLoginForm() {
   const redirect = searchParams.get("redirect") ?? "/admin";
   const errorRef = useRef<HTMLDivElement>(null);
 
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return localStorage.getItem(REMEMBER_USERNAME_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      return Boolean(localStorage.getItem(REMEMBER_USERNAME_KEY));
+    } catch {
+      return true;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,45 +125,38 @@ export default function AdminLoginForm() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await checkAuth();
-        if (cancelled) return;
-        if (res.success) {
-          router.replace(redirect);
-          return;
+    const clear = runAfterEffect(() => {
+      void (async () => {
+        try {
+          const res = await checkAuth();
+          if (cancelled) return;
+          if (res.success) {
+            router.replace(redirect);
+            return;
+          }
+        } catch {
+          /* oturum yok — forma devam */
+        } finally {
+          if (!cancelled) setCheckingSession(false);
         }
-      } catch {
-        /* oturum yok — forma devam */
-      } finally {
-        if (!cancelled) setCheckingSession(false);
-      }
-    })();
+      })();
+    });
     return () => {
       cancelled = true;
+      clear();
     };
   }, [redirect, router]);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(REMEMBER_USERNAME_KEY);
-      if (saved) {
-        setUsername(saved);
-        setRememberMe(true);
-      }
-    } catch {
-      /* localStorage unavailable */
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPublicSettings()
-      .then((res) => {
-        if (res.success && res.data) setShop(res.data);
-      })
-      .catch(() => {
-        /* backend kapalı — varsayılan ikon kullanılır */
-      });
+    return runAfterEffect(() => {
+      fetchPublicSettings()
+        .then((res) => {
+          if (res.success && res.data) setShop(res.data);
+        })
+        .catch(() => {
+          /* backend kapalı — varsayılan ikon kullanılır */
+        });
+    });
   }, []);
 
   useEffect(() => {

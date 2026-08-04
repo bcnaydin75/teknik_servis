@@ -6,6 +6,7 @@ import { checkAuth } from "@/lib/auth-api";
 import { changePassword } from "@/lib/settings-api";
 import type { Permissions } from "@/lib/permissions";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import PasswordInput from "./PasswordInput";
 
 function validatePasswordT(
@@ -39,7 +40,9 @@ export default function PasswordChangeBanner() {
   }, []);
 
   useEffect(() => {
-    refreshAuth();
+    const clear = runAfterEffect(() => {
+      void refreshAuth();
+    });
 
     function onPasswordChanged() {
       setVisible(false);
@@ -48,7 +51,10 @@ export default function PasswordChangeBanner() {
     }
 
     window.addEventListener("admin-password-changed", onPasswordChanged);
-    return () => window.removeEventListener("admin-password-changed", onPasswordChanged);
+    return () => {
+      clear();
+      window.removeEventListener("admin-password-changed", onPasswordChanged);
+    };
   }, [refreshAuth]);
 
   async function handleSubmit(e: FormEvent) {

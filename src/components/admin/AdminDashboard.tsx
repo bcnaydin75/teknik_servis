@@ -5,6 +5,7 @@ import Link from "next/link";
 import { checkAuth } from "@/lib/auth-api";
 import { archiveDevice, fetchDashboardStats, fetchDevices } from "@/lib/admin-api";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import type { DashboardStats, DeviceListItem } from "@/types/admin";
 import type { Permissions } from "@/lib/permissions";
 import AdminShell from "./AdminShell";
@@ -80,7 +81,9 @@ export default function AdminDashboard() {
   }, [searchInput]);
 
   useEffect(() => {
-    loadData(debouncedQuery);
+    return runAfterEffect(() => {
+      void loadData(debouncedQuery);
+    });
   }, [loadData, debouncedQuery]);
 
   useEffect(() => {

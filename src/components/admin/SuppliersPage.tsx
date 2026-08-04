@@ -6,6 +6,7 @@ import type { SupplierItem, SupplierTransaction } from "@/types/admin";
 import AdminShell from "./AdminShell";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import {
   ModalCloseButton,
   modalBackdropClass,
@@ -54,7 +55,9 @@ export default function SuppliersPage() {
   }, []);
 
   useEffect(() => {
-    load();
+    return runAfterEffect(() => {
+      void load();
+    });
   }, [load]);
 
   useEffect(() => {

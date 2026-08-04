@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAdminTheme, type AdminTheme } from "@/components/AdminThemeProvider";
+import { useAdminTheme, useClientMounted, type AdminTheme } from "@/components/AdminThemeProvider";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 
 type ThemeToggleProps = {
@@ -12,9 +11,7 @@ type ThemeToggleProps = {
 export default function ThemeToggle({ showLabels = false, variant = "default" }: ThemeToggleProps) {
   const { t } = useTranslation();
   const { theme, resolvedTheme, setTheme } = useAdminTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useClientMounted();
 
   if (!mounted) {
     return <div className="h-9 w-9 rounded-lg bg-slate-200 dark:bg-slate-700" />;

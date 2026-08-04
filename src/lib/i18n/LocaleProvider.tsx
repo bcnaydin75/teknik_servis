@@ -18,6 +18,7 @@ import { localeMessages } from "./locales";
 import { createTranslator } from "./translate";
 import { fetchPublicSettings } from "@/lib/settings-api";
 import { setClientLocale } from "@/lib/api-locale";
+import { runAfterEffect } from "@/lib/run-after-effect";
 
 type LocaleContextValue = {
   locale: Locale;
@@ -54,7 +55,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    loadLocale();
+    return runAfterEffect(() => {
+      void loadLocale();
+    });
   }, [loadLocale]);
 
   useEffect(() => {

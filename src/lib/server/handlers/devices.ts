@@ -87,7 +87,7 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
     const pattern = `%${q}%`;
     const quoted = postgrestQuoted(pattern);
 
-    let customerQuery = applyTenantFilter(
+    const customerQuery = applyTenantFilter(
       db.from(Tables.musteriler).select("id").ilike("ad_soyad", pattern),
       scope
     );

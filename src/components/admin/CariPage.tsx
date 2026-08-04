@@ -6,6 +6,7 @@ import { fetchCariDetail, fetchCariList, postCariTransaction, searchCariCustomer
 import type { CariCustomer, CariTransaction } from "@/types/settings";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency, formatDate } from "@/lib/i18n/format";
+import { runAfterEffect } from "@/lib/run-after-effect";
 
 export default function CariPage() {
   const { t, locale } = useTranslation();
@@ -25,7 +26,11 @@ export default function CariPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { loadList(); }, [loadList]);
+  useEffect(() => {
+    return runAfterEffect(() => {
+      void loadList();
+    });
+  }, [loadList]);
 
   async function selectCustomer(c: CariCustomer) {
     setSelected(c);

@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
 } from "react";
 
 export type AdminTheme = "light" | "dark" | "system";
@@ -21,54 +22,77 @@ const STORAGE_KEY = "teknik-servis-admin-theme";
 
 const AdminThemeContext = createContext<AdminThemeContextValue | null>(null);
 
+function readStoredTheme(): AdminTheme {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY) as AdminTheme | null;
+    if (stored === "light" || stored === "dark" || stored === "system") {
+      return stored;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "dark";
+}
+
 function resolveTheme(theme: AdminTheme): "light" | "dark" {
-  if (typeof window === "undefined") return "dark";
   if (theme === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    if (typeof window === "undefined") return "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
   }
   return theme;
 }
 
+function subscribeSystemTheme(onStoreChange: () => void) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+function getSystemSnapshot() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function getServerSystemSnapshot(): "light" | "dark" {
+  return "dark";
+}
+
 export function AdminThemeProvider({ children }: { children: React.ReactNode }) {
-  // Mobilde beyaz flash olmasın — varsayılan koyu (PWA theme_color ile uyumlu)
   const [theme, setThemeState] = useState<AdminTheme>("dark");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
-  const [mounted, setMounted] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const systemPref = useSyncExternalStore(
+    subscribeSystemTheme,
+    getSystemSnapshot,
+    getServerSystemSnapshot
+  );
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as AdminTheme | null;
-    const next =
-      stored === "light" || stored === "dark" || stored === "system"
-        ? stored
-        : "dark";
-    setThemeState(next);
-    setResolvedTheme(resolveTheme(next));
-    setMounted(true);
+    const id = window.setTimeout(() => {
+      setThemeState(readStoredTheme());
+      setHydrated(true);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-    setResolvedTheme(resolveTheme(theme));
-  }, [theme, mounted]);
+  const resolvedTheme: "light" | "dark" =
+    theme === "system" ? systemPref : theme;
 
   useEffect(() => {
-    if (!mounted || theme !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => setResolvedTheme(resolveTheme("system"));
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, [theme, mounted]);
-
-  useEffect(() => {
-    if (!mounted) return;
+    if (!hydrated) return;
     document.documentElement.style.backgroundColor =
       resolvedTheme === "dark" ? "#0f172a" : "#f8fafc";
-  }, [mounted, resolvedTheme]);
+  }, [hydrated, resolvedTheme]);
 
   const setTheme = useCallback((next: AdminTheme) => {
-    localStorage.setItem(STORAGE_KEY, next);
+    try {
+      localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
     setThemeState(next);
-    setResolvedTheme(resolveTheme(next));
   }, []);
 
   const value = useMemo(
@@ -97,4 +121,13 @@ export function useAdminTheme(): AdminThemeContextValue {
     throw new Error("useAdminTheme yalnızca admin panelinde kullanılabilir.");
   }
   return ctx;
+}
+
+/** Client hydration tamamlandı mı (SSR uyumsuzluğu önlemek için). */
+export function useClientMounted(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 }

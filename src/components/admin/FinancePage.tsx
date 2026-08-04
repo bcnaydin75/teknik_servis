@@ -6,6 +6,7 @@ import type { FinanceSummary, TransactionItem } from "@/types/admin";
 import AdminShell from "./AdminShell";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
+import { runAfterEffect } from "@/lib/run-after-effect";
 
 const emptySummary: FinanceSummary = {
   total_income: 0,
@@ -42,7 +43,9 @@ export default function FinancePage() {
   }, [t]);
 
   useEffect(() => {
-    loadFinance();
+    return runAfterEffect(() => {
+      void loadFinance();
+    });
   }, [loadFinance]);
 
   return (

@@ -3,8 +3,17 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { fetchRepairStatus } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import type { RepairData } from "@/types/repair";
 import RepairResult from "./RepairResult";
+
+function readKodFromUrl(): string {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl =
+    params.get("takip_kodu") ?? params.get("kod") ?? params.get("code");
+  return fromUrl?.trim().toUpperCase() ?? "";
+}
 
 export default function TrackingQuery() {
   const { t } = useTranslation();
@@ -38,17 +47,16 @@ export default function TrackingQuery() {
   }, [t]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const fromUrl =
-      params.get("takip_kodu") ?? params.get("kod") ?? params.get("code");
-    if (fromUrl?.trim()) {
-      const kod = fromUrl.trim().toUpperCase();
-      setTakipKodu(kod);
-      void runQuery(kod);
-    }
-    if (window.location.search) {
-      window.history.replaceState(null, "", "/");
-    }
+    return runAfterEffect(() => {
+      const kod = readKodFromUrl();
+      if (kod) {
+        setTakipKodu(kod);
+        void runQuery(kod);
+      }
+      if (window.location.search) {
+        window.history.replaceState(null, "", "/");
+      }
+    });
   }, [runQuery]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {

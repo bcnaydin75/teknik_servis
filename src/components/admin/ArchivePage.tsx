@@ -5,6 +5,7 @@ import Link from "next/link";
 import { fetchDevices, permanentDeleteDevice, restoreDevice } from "@/lib/admin-api";
 import type { ArchivePeriod, DeviceListItem } from "@/types/admin";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import AdminShell from "./AdminShell";
 import ArchivePeriodCards from "./ArchivePeriodCards";
 import DeviceSearchBar from "./DeviceSearchBar";
@@ -60,7 +61,9 @@ export default function ArchivePage() {
   }, [searchInput]);
 
   useEffect(() => {
-    loadData();
+    return runAfterEffect(() => {
+      void loadData();
+    });
   }, [loadData]);
 
   useEffect(() => {

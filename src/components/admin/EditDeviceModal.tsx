@@ -6,6 +6,7 @@ import type { CustomerCheckData, DeviceListItem, InventoryItem } from "@/types/a
 import { DEVICE_STATUS_OPTIONS } from "@/types/admin";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency, statusKey } from "@/lib/i18n/format";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import CustomerAlert from "./CustomerAlert";
 import {
   ModalCloseButton,
@@ -60,24 +61,25 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
   useEffect(() => {
     if (!device) return;
 
-    setError(null);
-    setStatus(device.cihaz_durumu);
-    setRiskli(device.riskli_musteri);
-    setRiskNotu(device.risk_notu ?? "");
-    setImeiNo(device.imei_no ?? "");
-    setCihazSifresi(device.cihaz_sifresi ?? "");
-    setIscilikUcreti(device.iscilik_ucreti);
-    setToplamUcret(device.toplam_ucret);
-    setInventoryLoading(true);
+    return runAfterEffect(() => {
+      setError(null);
+      setStatus(device.cihaz_durumu);
+      setRiskli(device.riskli_musteri);
+      setRiskNotu(device.risk_notu ?? "");
+      setImeiNo(device.imei_no ?? "");
+      setCihazSifresi(device.cihaz_sifresi ?? "");
+      setIscilikUcreti(device.iscilik_ucreti);
+      setToplamUcret(device.toplam_ucret);
+      setInventoryLoading(true);
 
-    const checkParams = device.musteri_telefon
-      ? { telefon: device.musteri_telefon }
-      : { ad_soyad: device.musteri_adi };
-    checkCustomer(checkParams).then((res) => {
-      if (res.success && res.data) setCustomerInfo(res.data);
-    });
+      const checkParams = device.musteri_telefon
+        ? { telefon: device.musteri_telefon }
+        : { ad_soyad: device.musteri_adi };
+      checkCustomer(checkParams).then((res) => {
+        if (res.success && res.data) setCustomerInfo(res.data);
+      });
 
-    fetchInventory()
+      fetchInventory()
       .then((response) => {
         if (!response.success || !response.data) {
           setError(response.message ?? t("admin.modals.editDevice.stockLoadFailed"));
@@ -111,7 +113,8 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
       })
       .catch(() => setError(t("admin.modals.editDevice.stockFetchFailed")))
       .finally(() => setInventoryLoading(false));
-  }, [device]);
+    });
+  }, [device, t]);
 
   const selectedItems = useMemo(
     () => inventory.filter((item) => selectedIds.includes(item.id)),
@@ -125,9 +128,14 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
 
   const hesaplananToplam = parcaUcreti + iscilikUcreti;
 
-  useEffect(() => {
+  const [totalBasis, setTotalBasis] = useState({ hesaplananToplam: 0, indirim: 0 });
+  if (
+    hesaplananToplam !== totalBasis.hesaplananToplam ||
+    indirim !== totalBasis.indirim
+  ) {
+    setTotalBasis({ hesaplananToplam, indirim });
     setToplamUcret(Math.max(0, Math.round((hesaplananToplam - indirim) * 100) / 100));
-  }, [hesaplananToplam, indirim]);
+  }
 
   function togglePart(id: number) {
     setSelectedIds((prev) => {

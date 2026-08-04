@@ -18,6 +18,7 @@ import { checkAuth } from "@/lib/auth-api";
 import { assignableStaffRoles } from "@/lib/permissions";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { LOCALES, normalizeLocale, type Locale } from "@/lib/i18n/config";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import PasswordInput from "./PasswordInput";
 import type { ShopSettings, StaffMember } from "@/types/settings";
 
@@ -79,7 +80,11 @@ export default function SettingsPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    return runAfterEffect(() => {
+      void load();
+    });
+  }, [load]);
 
   async function handleShopSave(e: FormEvent) {
     e.preventDefault();

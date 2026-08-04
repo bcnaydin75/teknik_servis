@@ -6,6 +6,7 @@ import type { InventoryItem, SupplierItem } from "@/types/admin";
 import AdminShell from "./AdminShell";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency } from "@/lib/i18n/format";
+import { runAfterEffect } from "@/lib/run-after-effect";
 import {
   ModalCloseButton,
   modalBackdropClass,
@@ -67,7 +68,9 @@ export default function InventoryPage() {
   }, [t]);
 
   useEffect(() => {
-    loadInventory();
+    return runAfterEffect(() => {
+      void loadInventory();
+    });
   }, [loadInventory]);
 
   useEffect(() => {
