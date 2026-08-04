@@ -4,13 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { loginAdmin } from "@/lib/auth-api";
+import { checkAuth, loginAdmin } from "@/lib/auth-api";
 import { ADMIN_BRAND_LOGO } from "@/lib/brand";
 import { LOCALES, LOCALE_FLAGS, type Locale } from "@/lib/i18n/config";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { fetchPublicSettings } from "@/lib/settings-api";
 import type { ShopSettings } from "@/types/settings";
 import PasswordInput from "./PasswordInput";
+import AdminLoginSkeleton from "./AdminLoginSkeleton";
 
 const REMEMBER_USERNAME_KEY = "admin_login_remember_username";
 const LOGIN_FAILURES_KEY = "admin_login_failures";
@@ -100,11 +101,33 @@ export default function AdminLoginForm() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [shop, setShop] = useState<ShopSettings | null>(null);
 
   const shopName = shop?.firma_adi ?? t("customer.hero.defaultShopName");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await checkAuth();
+        if (cancelled) return;
+        if (res.success) {
+          router.replace(redirect);
+          return;
+        }
+      } catch {
+        /* oturum yok — forma devam */
+      } finally {
+        if (!cancelled) setCheckingSession(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [redirect, router]);
 
   useEffect(() => {
     try {
@@ -190,6 +213,10 @@ export default function AdminLoginForm() {
     setLocale(next);
   }
 
+  if (checkingSession) {
+    return <AdminLoginSkeleton />;
+  }
+
   return (
     <div className="relative flex min-h-app flex-col items-center justify-center px-4 px-safe py-8 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
       <AdminLoginBackground />
@@ -210,7 +237,7 @@ export default function AdminLoginForm() {
             value={locale}
             onChange={(e) => handleLocaleChange(e.target.value as Locale)}
             disabled={loading}
-            className="h-9 cursor-pointer rounded-lg border border-white/20 bg-white/10 px-2.5 text-sm text-slate-200 backdrop-blur-md outline-none transition hover:bg-white/15 focus:border-blue-400/50 disabled:opacity-60"
+            className="h-9 cursor-pointer rounded-lg border border-slate-600 bg-slate-800 px-2.5 text-sm text-slate-200 outline-none transition hover:bg-slate-700 focus:border-blue-400/50 disabled:opacity-60"
           >
             {LOCALES.map((loc) => (
               <option key={loc} value={loc} className="bg-slate-900 text-white">
@@ -222,21 +249,13 @@ export default function AdminLoginForm() {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/[0.06] px-6 pb-12 pt-6 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-md sm:px-8 sm:pb-14 sm:pt-8">
+        <div className="relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 px-6 pb-12 pt-6 shadow-[0_8px_32px_rgba(0,0,0,0.45)] sm:px-8 sm:pb-14 sm:pt-8">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.12] via-white/[0.02] to-transparent"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -left-1/2 -top-1/2 h-full w-full rounded-full bg-violet-500/[0.07] blur-3xl"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-1/2 -right-1/2 h-full w-full rounded-full bg-blue-500/[0.07] blur-3xl"
+            className="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-800/80 via-transparent to-transparent"
           />
 
-          <span className="absolute bottom-4 right-4 z-10 rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-0.5 text-[11px] font-medium text-slate-300 backdrop-blur-md sm:bottom-6 sm:right-6">
+          <span className="absolute bottom-4 right-4 z-10 rounded-full border border-slate-600 bg-slate-800 px-2.5 py-0.5 text-[11px] font-medium text-slate-300 sm:bottom-6 sm:right-6">
             {t("admin.login.versionBadge")}
           </span>
 
@@ -246,7 +265,7 @@ export default function AdminLoginForm() {
                 ref={errorRef}
                 role="alert"
                 aria-live="assertive"
-                className="mb-5 flex items-start gap-3 rounded-xl border border-red-400/25 bg-red-500/[0.08] px-4 py-3 text-sm font-medium text-red-100 backdrop-blur-md"
+                className="mb-5 flex items-start gap-3 rounded-xl border border-red-400/30 bg-red-950/80 px-4 py-3 text-sm font-medium text-red-100"
               >
                 <svg
                   className="mt-0.5 h-5 w-5 shrink-0 text-red-300"
@@ -268,7 +287,7 @@ export default function AdminLoginForm() {
             {info && !error && (
               <div
                 role="status"
-                className="mb-5 flex items-start gap-3 rounded-xl border border-blue-400/25 bg-blue-500/[0.08] px-4 py-3 text-sm text-blue-100 backdrop-blur-md"
+                className="mb-5 flex items-start gap-3 rounded-xl border border-blue-400/30 bg-blue-950/80 px-4 py-3 text-sm text-blue-100"
               >
                 <svg
                   className="mt-0.5 h-5 w-5 shrink-0 text-blue-300"
@@ -288,7 +307,7 @@ export default function AdminLoginForm() {
             )}
 
             <div className="mb-6 text-center">
-              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-blue-900/40 ring-2 ring-white/15">
+              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full shadow-lg shadow-blue-900/40 ring-2 ring-slate-600">
                 <Image
                   src={ADMIN_BRAND_LOGO}
                   alt={shopName}
@@ -324,7 +343,7 @@ export default function AdminLoginForm() {
                   autoCapitalize="none"
                   autoCorrect="off"
                   disabled={loading}
-                  className="mt-2 w-full rounded-xl border border-white/15 bg-white/[0.05] px-4 py-3 text-base text-white placeholder:text-slate-400 outline-none backdrop-blur-sm transition focus:border-blue-400/50 focus:bg-white/[0.08] focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                  className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-base text-white placeholder:text-slate-400 outline-none transition focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
                 />
               </div>
 
@@ -340,8 +359,8 @@ export default function AdminLoginForm() {
                     placeholder={t("admin.login.passwordPlaceholder")}
                     autoComplete="current-password"
                     disabled={loading}
-                    className="w-full rounded-xl border border-white/15 bg-white/[0.05] px-4 py-3 pr-14 text-base text-white placeholder:text-slate-400 outline-none backdrop-blur-sm transition focus:border-blue-400/50 focus:bg-white/[0.08] focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
-                    toggleClassName="text-slate-300 hover:bg-white/10 hover:text-white"
+                    className="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 pr-14 text-base text-white placeholder:text-slate-400 outline-none transition focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                    toggleClassName="text-slate-300 hover:bg-slate-700 hover:text-white"
                   />
                 </div>
 
@@ -371,7 +390,7 @@ export default function AdminLoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="relative w-full overflow-hidden rounded-xl border border-white/20 bg-gradient-to-r from-blue-600/90 to-indigo-600/90 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-900/25 backdrop-blur-sm transition hover:from-blue-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-900/25 transition hover:from-blue-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading && (
                   <span

@@ -23,7 +23,7 @@ export default function AdminLoginSkeleton() {
 
       <div className="relative z-10 w-full max-w-md">
         <div
-          className="relative overflow-hidden rounded-2xl border border-white/20 bg-white/6 px-6 pb-12 pt-6 backdrop-blur-md sm:px-8 sm:pb-14 sm:pt-8"
+          className="relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 px-6 pb-12 pt-6 sm:px-8 sm:pb-14 sm:pt-8"
           role="status"
           aria-live="polite"
           aria-label={t("admin.login.loading")}
