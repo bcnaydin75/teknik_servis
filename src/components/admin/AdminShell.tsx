@@ -40,60 +40,82 @@ export default function AdminShell({
     };
   }, [menuOpen]);
 
+  // iOS/PWA: fixed bottom bazen ortada kalır; flex footer + gerçek viewport yüksekliği daha stabil
+  useEffect(() => {
+    const setAppHeight = () => {
+      const h =
+        window.visualViewport?.height ??
+        window.innerHeight ??
+        document.documentElement.clientHeight;
+      document.documentElement.style.setProperty("--app-height", `${Math.round(h)}px`);
+    };
+    setAppHeight();
+    window.addEventListener("resize", setAppHeight);
+    window.visualViewport?.addEventListener("resize", setAppHeight);
+    window.visualViewport?.addEventListener("scroll", setAppHeight);
+    return () => {
+      window.removeEventListener("resize", setAppHeight);
+      window.visualViewport?.removeEventListener("resize", setAppHeight);
+      window.visualViewport?.removeEventListener("scroll", setAppHeight);
+    };
+  }, []);
+
   return (
-    <div className="flex min-h-app bg-slate-50 dark:bg-slate-950">
-      <AdminSidebar
-        mobileOpen={menuOpen}
-        onMobileClose={() => setMenuOpen(false)}
-      />
+    <div className="flex h-[var(--app-height)] max-h-[var(--app-height)] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
+      <div className="flex min-h-0 flex-1">
+        <AdminSidebar
+          mobileOpen={menuOpen}
+          onMobileClose={() => setMenuOpen(false)}
+        />
 
-      <main className="flex min-w-0 flex-1 flex-col lg:overflow-auto">
-        <PasswordChangeBanner />
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+          <PasswordChangeBanner />
 
-        {/* Mobil üst bar */}
-        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
-              aria-label={t("nav.openMenu")}
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <div className="min-w-0 flex-1">
-              <h1 className="truncate text-lg font-bold text-slate-900 dark:text-white">{title}</h1>
-              {subtitle && (
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
-              )}
+          {/* Mobil üst bar */}
+          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/95 lg:hidden">
+            <div className="flex items-center gap-3 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(true)}
+                className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800"
+                aria-label={t("nav.openMenu")}
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-lg font-bold text-slate-900 dark:text-white">{title}</h1>
+                {subtitle && (
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <AdminUserBadge compact />
+                <ThemeToggle />
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <AdminUserBadge compact />
-              <ThemeToggle />
-            </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Masaüstü üst bar */}
-        <header className="sticky top-0 z-10 hidden border-b border-slate-200 bg-white/90 px-6 py-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90 lg:block">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h1>
-              {subtitle && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
-              )}
+          {/* Masaüstü üst bar */}
+          <header className="sticky top-0 z-10 hidden border-b border-slate-200 bg-white/90 px-6 py-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/90 lg:block">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h1>
+                {subtitle && (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <AdminUserBadge />
+                {action}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-3">
-              <AdminUserBadge />
-              {action}
-            </div>
-          </div>
-        </header>
+          </header>
 
-        <div className="flex-1 p-4 pb-24 sm:p-6 lg:pb-6">{children}</div>
-      </main>
+          <div className="flex-1 p-4 pb-24 sm:p-6 lg:pb-6">{children}</div>
+        </main>
+      </div>
 
       <AdminMobileNav onOpenMenu={() => setMenuOpen(true)} />
     </div>

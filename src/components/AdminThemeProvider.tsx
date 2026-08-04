@@ -72,8 +72,13 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!hydrated) return;
-    document.documentElement.style.backgroundColor =
-      resolvedTheme === "dark" ? "#0f172a" : "#f8fafc";
+    const isDark = resolvedTheme === "dark";
+    document.documentElement.style.backgroundColor = isDark ? "#0f172a" : "#f8fafc";
+    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+    document.body.style.backgroundColor = isDark ? "#0f172a" : "#f8fafc";
+    // PWA status bar / theme-color
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", isDark ? "#0f172a" : "#f8fafc");
   }, [hydrated, resolvedTheme]);
 
   const setTheme = useCallback((next: AdminTheme) => {
@@ -95,8 +100,8 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
       <div
         className={
           resolvedTheme === "dark"
-            ? "admin-dark min-h-screen bg-slate-950 text-slate-100"
-            : "min-h-screen bg-slate-50 text-slate-900"
+            ? "admin-dark h-[var(--app-height)] min-h-[var(--app-height)] bg-slate-950 text-slate-100"
+            : "h-[var(--app-height)] min-h-[var(--app-height)] bg-slate-50 text-slate-900"
         }
       >
         {children}

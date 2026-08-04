@@ -35,7 +35,7 @@ export default function AdminMobileNav({ onOpenMenu }: AdminMobileNavProps) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-800 bg-slate-900/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden"
+      className="z-30 shrink-0 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/95 lg:hidden"
       aria-label={t("nav.menu")}
     >
       <div className="mx-auto flex max-w-lg items-stretch justify-around">
@@ -46,11 +46,17 @@ export default function AdminMobileNav({ onOpenMenu }: AdminMobileNavProps) {
               key={item.href}
               href={item.href}
               className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium transition touch-manipulation ${
-                active ? "text-blue-400" : "text-slate-400 active:text-white"
+                active
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-slate-500 active:text-slate-900 dark:text-slate-400 dark:active:text-white"
               }`}
             >
               <svg
-                className={`h-6 w-6 shrink-0 ${active ? "text-blue-400" : "text-slate-400"}`}
+                className={`h-6 w-6 shrink-0 ${
+                  active
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-slate-500 dark:text-slate-400"
+                }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -71,7 +77,7 @@ export default function AdminMobileNav({ onOpenMenu }: AdminMobileNavProps) {
         <button
           type="button"
           onClick={onOpenMenu}
-          className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium text-slate-400 transition touch-manipulation active:text-white"
+          className="flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2.5 text-[10px] font-medium text-slate-500 transition touch-manipulation active:text-slate-900 dark:text-slate-400 dark:active:text-white"
           aria-label={t("nav.openMenu")}
         >
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

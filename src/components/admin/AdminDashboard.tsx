@@ -259,7 +259,7 @@ export default function AdminDashboard() {
       )}
 
       {toast && (
-        <div className="fixed bottom-24 left-4 right-4 z-50 rounded-xl bg-slate-900 px-5 py-3 text-center text-sm font-medium text-white shadow-xl sm:text-left lg:bottom-6 lg:left-auto lg:right-6 lg:max-w-sm">
+        <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 z-50 rounded-xl bg-slate-900 px-5 py-3 text-center text-sm font-medium text-white shadow-xl sm:text-left lg:bottom-6 lg:left-auto lg:right-6 lg:max-w-sm dark:bg-slate-800 dark:ring-1 dark:ring-slate-600">
           {toast}
         </div>
       )}
@@ -267,7 +267,7 @@ export default function AdminDashboard() {
       <button
         type="button"
         onClick={() => setAddModalOpen(true)}
-        className="fixed bottom-24 right-4 z-40 flex h-14 w-14 touch-manipulation items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-700 active:scale-95 lg:hidden"
+        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-4 z-40 flex h-14 w-14 touch-manipulation items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-700 active:scale-95 lg:hidden"
         aria-label={t("admin.shell.addDeviceAria")}
       >
         <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">

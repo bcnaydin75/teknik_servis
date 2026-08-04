@@ -6,6 +6,7 @@
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
+  /* JS (AdminShell) günceller; fallback 100dvh */
   --app-height: 100dvh;
 }
 

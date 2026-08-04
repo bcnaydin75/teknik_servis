@@ -88,14 +88,21 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
         return (
           <div
             key={card.key}
-            className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
+            className="relative isolate rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
           >
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
                   {t(card.labelKey)}
                 </p>
-                <p className="mt-1 text-2xl font-bold text-slate-900 sm:mt-2 sm:text-3xl dark:text-white">
+                <p
+                  className={`mt-1 font-bold tabular-nums tracking-tight text-slate-900 dark:text-white ${
+                    card.currency
+                      ? "truncate text-lg sm:text-2xl lg:text-3xl"
+                      : "text-2xl sm:mt-2 sm:text-3xl"
+                  }`}
+                  title={displayValue}
+                >
                   {displayValue}
                 </p>
                 <p className="mt-0.5 hidden text-xs text-slate-400 sm:block dark:text-slate-500">
@@ -113,7 +120,7 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
                 </svg>
               </span>
             </div>
-            <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${card.color}`} />
+            <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-1 overflow-hidden rounded-b-2xl bg-gradient-to-r ${card.color}`} />
           </div>
         );
       })}
