@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { useAdminTheme } from "@/components/AdminThemeProvider";
 import AdminShell from "./AdminShell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -282,9 +283,12 @@ export default function SettingsPage() {
         <form onSubmit={handleShopSave} className="max-w-2xl space-y-5 rounded-2xl bg-white p-6 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
           <div className="flex items-center gap-4">
             {shop.logo_url ? (
-              <img
+              <Image
                 src={shop.logo_url}
                 alt={t("admin.settings.firma.logo")}
+                width={64}
+                height={64}
+                unoptimized
                 className="h-16 w-16 rounded-xl object-contain ring-1 ring-slate-200 dark:ring-slate-600 dark:bg-slate-900"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).style.display = "none";

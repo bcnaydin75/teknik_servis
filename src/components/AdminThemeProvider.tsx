@@ -34,16 +34,6 @@ function readStoredTheme(): AdminTheme {
   return "dark";
 }
 
-function resolveTheme(theme: AdminTheme): "light" | "dark" {
-  if (theme === "system") {
-    if (typeof window === "undefined") return "dark";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  }
-  return theme;
-}
-
 function subscribeSystemTheme(onStoreChange: () => void) {
   const mq = window.matchMedia("(prefers-color-scheme: dark)");
   mq.addEventListener("change", onStoreChange);

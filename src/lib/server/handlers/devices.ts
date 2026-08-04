@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission, requireSession } from "../auth";
+import { requirePermission } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
 import { applyTenantFilter, resolveTenantScope, requireWriteTenantId, withScopedId } from "../tenant-context";
 import { Tables } from "../db-tables";
@@ -123,7 +123,8 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
 
   let devices = filtered.map((row) => {
     const customer = (row[Tables.musteriler] ?? {}) as Record<string, unknown>;
-    const { [Tables.musteriler]: _, ...repair } = row as Record<string, unknown>;
+    const repair = { ...(row as Record<string, unknown>) };
+    delete repair[Tables.musteriler];
     return mapDevice(repair, customer);
   });
 
