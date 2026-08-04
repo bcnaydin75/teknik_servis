@@ -7,14 +7,10 @@ export type TenantScope =
   | { ok: true; mode: "shop"; tenantId: number }
   | { ok: false; status: number; message: string };
 
-/** Okuma/yazma: superadmin dükkan verisine erişemez */
+/** Okuma/listeleme: superadmin tüm dükkanları görür */
 export function resolveTenantScope(user: AuthUser): TenantScope {
   if (user.is_superadmin) {
-    return {
-      ok: false,
-      status: 403,
-      message: "Geliştirici hesabı dükkan verisi görüntüleyemez veya düzenleyemez.",
-    };
+    return { ok: true, mode: "all" };
   }
   const tenantId = user.tenant_id;
   if (!tenantId || tenantId <= 0) {
