@@ -1,22 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { fetchPublicSettings } from "@/lib/settings-api";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
-import type { ShopSettings } from "@/types/settings";
 
 export default function Hero() {
   const { t } = useTranslation();
-  const [shop, setShop] = useState<ShopSettings | null>(null);
-
-  useEffect(() => {
-    fetchPublicSettings().then((res) => {
-      if (res.success && res.data) setShop(res.data);
-    });
-  }, []);
-
   const systemBrand = t("customer.hero.defaultShopName");
-  const firmaAdi = shop?.firma_adi?.trim() || null;
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 pb-16 pt-[calc(env(safe-area-inset-top,0px)+4rem)] sm:px-6 sm:pb-24 sm:pt-[calc(env(safe-area-inset-top,0px)+6rem)] lg:px-8">
@@ -27,9 +15,6 @@ export default function Hero() {
         <span className="mb-4 inline-flex items-center rounded-full bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-200 ring-1 ring-blue-400/30">
           {systemBrand}
         </span>
-        {firmaAdi && firmaAdi.toLocaleLowerCase("tr") !== systemBrand.toLocaleLowerCase("tr") && (
-          <p className="mb-2 text-sm font-medium text-blue-100/90">{firmaAdi}</p>
-        )}
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
           {t("customer.hero.headline")}{" "}
           <span className="bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
@@ -39,13 +24,6 @@ export default function Hero() {
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-300">
           {t("customer.hero.description")}
         </p>
-        {(shop?.telefon || shop?.adres) && (
-          <p className="mx-auto mt-4 text-sm text-slate-400">
-            {shop.telefon && <span>{shop.telefon}</span>}
-            {shop.telefon && shop.adres && <span className="mx-2">·</span>}
-            {shop.adres && <span>{shop.adres}</span>}
-          </p>
-        )}
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-slate-400">
           <div className="flex items-center gap-2">

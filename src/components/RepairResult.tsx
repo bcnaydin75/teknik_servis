@@ -73,17 +73,6 @@ export default function RepairResult({ data }: RepairResultProps) {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 rounded-2xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/50 sm:p-8">
-      {(data.firma_adi || data.firma_telefon) && (
-        <div className="mb-6 border-b border-slate-100 pb-5 text-center sm:text-left">
-          {data.firma_adi && (
-            <p className="text-lg font-bold text-slate-900">{data.firma_adi}</p>
-          )}
-          {data.firma_telefon && (
-            <p className="mt-1 text-sm text-slate-600">{data.firma_telefon}</p>
-          )}
-        </div>
-      )}
-
       <div className="flex flex-col gap-4 border-b border-slate-100 pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{t("customer.result.trackingCode")}</p>
