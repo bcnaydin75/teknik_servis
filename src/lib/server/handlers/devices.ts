@@ -56,6 +56,11 @@ function stripCosts<T extends { parca_ucreti: number; iscilik_ucreti: number; to
   }));
 }
 
+/** PostgREST filter değerlerini güvenli tırnakla (boşluk / özel karakter) */
+function postgrestQuoted(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
 export async function handleGetDevices(request: NextRequest): Promise<NextResponse> {
   const auth = await requirePermission("dashboard");
   if (!auth.ok) return jsonFail(auth.message, auth.status);
@@ -79,13 +84,33 @@ export async function handleGetDevices(request: NextRequest): Promise<NextRespon
   );
 
   if (q) {
-    query = query.or(
-      `takip_kodu.ilike.%${q}%,cihaz_modeli.ilike.%${q}%,${Tables.musteriler}.ad_soyad.ilike.%${q}%`
+    const pattern = `%${q}%`;
+    const quoted = postgrestQuoted(pattern);
+
+    let customerQuery = applyTenantFilter(
+      db.from(Tables.musteriler).select("id").ilike("ad_soyad", pattern),
+      scope
     );
+    const { data: matchedCustomers } = await customerQuery;
+    const customerIds = (matchedCustomers ?? [])
+      .map((c) => Number(c.id))
+      .filter((id) => id > 0);
+
+    const orParts = [
+      `takip_kodu.ilike.${quoted}`,
+      `cihaz_modeli.ilike.${quoted}`,
+    ];
+    if (customerIds.length > 0) {
+      orParts.push(`customer_id.in.(${customerIds.join(",")})`);
+    }
+    query = query.or(orParts.join(","));
   }
 
   const { data: rows, error } = await query;
-  if (error) return jsonFail("Veritabanı hatası.", 500);
+  if (error) {
+    console.error("[get_devices]", error.message, error.details, error.hint);
+    return jsonFail("Veritabanı hatası.", 500);
+  }
 
   let filtered = rows ?? [];
   if (archived && year > 0 && month > 0) {

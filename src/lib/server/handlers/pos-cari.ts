@@ -172,11 +172,14 @@ export async function handleCari(request: NextRequest): Promise<NextResponse> {
     const q = (request.nextUrl.searchParams.get("q") ?? "").trim();
     if (!q) return jsonOk({ data: [] });
 
+    const pattern = `%${q}%`;
+    const quoted = `"${pattern.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+
     const { data: rows } = await applyTenantFilter(
       db
         .from(Tables.musteriler)
         .select("*")
-        .or(`ad_soyad.ilike.%${q}%,telefon.ilike.%${q}%`)
+        .or(`ad_soyad.ilike.${quoted},telefon.ilike.${quoted}`)
         .limit(20),
       scope
     );

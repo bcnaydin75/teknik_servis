@@ -39,6 +39,7 @@ export default function ArchivePage() {
       });
 
       if (!res.success || !res.data) {
+        setDevices([]);
         setError(res.message ?? t("admin.archive.loadFailed"));
         return;
       }
