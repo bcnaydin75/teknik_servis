@@ -137,9 +137,10 @@ export const messages = {
       password: "Contraseña",
       passwordPlaceholder: "Introduzca su contraseña",
       rememberMe: "Recordarme",
+      rememberMeHint: "Mantener sesión 1 semana",
       forgotPassword: "¿Olvidó su contraseña?",
       forgotPasswordHint:
-        "Contacte al administrador del sistema para restablecer la contraseña o inicie sesión con una cuenta de administrador.",
+        "No se puede restablecer por correo. Pida a su administrador de tienda una nueva contraseña en Ajustes → Personal. Si usted es el admin, contacte al desarrollador o use supabase/reset_admin_password.sql.",
       backToCustomer: "← Volver a la página del cliente",
       keyboardHint: "Pulse Enter para iniciar sesión",
       tooManyAttempts: "Demasiados intentos fallidos. Espere unos minutos.",
@@ -251,6 +252,10 @@ export const messages = {
         actionsCol: "Acciones",
         staffDeleted: "{username} eliminado permanentemente.",
         deleteFailed: "No se pudo eliminar.",
+        resetPassword: "Restablecer contraseña",
+        resetPasswordPrompt: "Nueva contraseña para {user} (mín. 8, 1 mayúscula, 1 dígito):",
+        passwordReset: "Contraseña actualizada para {username}.",
+        resetFailed: "No se pudo restablecer.",
       },
       sifre: {
         current: "Contraseña actual",

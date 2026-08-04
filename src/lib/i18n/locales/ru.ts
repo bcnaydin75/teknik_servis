@@ -137,9 +137,10 @@ export const messages = {
       password: "Пароль",
       passwordPlaceholder: "Введите пароль",
       rememberMe: "Запомнить меня",
+      rememberMeHint: "Автовход на 1 неделю",
       forgotPassword: "Забыли пароль?",
       forgotPasswordHint:
-        "Обратитесь к системному администратору для сброса пароля или войдите с учётной записью администратора.",
+        "Сброс по email недоступен. Попросите администратора магазина задать новый пароль в Настройки → Персонал. Если вы админ — обратитесь к разработчику или используйте supabase/reset_admin_password.sql.",
       backToCustomer: "← На страницу клиента",
       keyboardHint: "Enter — быстрый вход",
       tooManyAttempts: "Слишком много неудачных попыток. Подождите несколько минут.",
@@ -251,6 +252,10 @@ export const messages = {
         actionsCol: "Действия",
         staffDeleted: "{username} удалён навсегда.",
         deleteFailed: "Не удалось удалить.",
+        resetPassword: "Сбросить пароль",
+        resetPasswordPrompt: "Новый пароль для {user} (мин. 8, 1 заглавная, 1 цифра):",
+        passwordReset: "Пароль обновлён для {username}.",
+        resetFailed: "Не удалось сбросить пароль.",
       },
       sifre: {
         current: "Текущий пароль",

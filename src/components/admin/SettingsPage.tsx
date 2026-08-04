@@ -135,6 +135,33 @@ export default function SettingsPage() {
     } else setError(res.message ?? t("admin.settings.personel.addFailed"));
   }
 
+  async function handleResetStaffPassword(s: StaffMember) {
+    const pwd = window.prompt(
+      t("admin.settings.personel.resetPasswordPrompt", { user: s.username })
+    );
+    if (pwd == null) return;
+    const trimmed = pwd.trim();
+    if (!trimmed) return;
+    const pwdErr = validatePasswordT(trimmed, t);
+    if (pwdErr) {
+      setError(pwdErr);
+      return;
+    }
+    setError(null);
+    const res = await updateStaff({
+      id: s.id,
+      role: s.role,
+      ad_soyad: s.ad_soyad,
+      aktif: true,
+      password: trimmed,
+    });
+    if (res.success) {
+      setMessage(t("admin.settings.personel.passwordReset", { username: s.username }));
+    } else {
+      setError(res.message ?? t("admin.settings.personel.resetFailed"));
+    }
+  }
+
   async function handleChangePassword(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -418,13 +445,22 @@ export default function SettingsPage() {
                   {s.id === currentUserId ? (
                     <span className="text-xs text-slate-400">{t("common.you")}</span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(s)}
-                      className="min-h-[36px] touch-manipulation rounded-lg bg-red-100 px-3 py-2 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                    >
-                      {t("common.delete")}
-                    </button>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleResetStaffPassword(s)}
+                        className="min-h-[36px] touch-manipulation rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                      >
+                        {t("admin.settings.personel.resetPassword")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(s)}
+                        className="min-h-[36px] touch-manipulation rounded-lg bg-red-100 px-3 py-2 text-xs font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                      >
+                        {t("common.delete")}
+                      </button>
+                    </div>
                   )}
                 </div>
                 {!isSuperadmin && (
@@ -500,13 +536,22 @@ export default function SettingsPage() {
                       {s.id === currentUserId ? (
                         <span className="text-xs text-slate-400">{t("common.you")}</span>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(s)}
-                          className="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60"
-                        >
-                          {t("common.delete")}
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleResetStaffPassword(s)}
+                            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                          >
+                            {t("admin.settings.personel.resetPassword")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(s)}
+                            className="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 dark:hover:bg-red-900/60"
+                          >
+                            {t("common.delete")}
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>

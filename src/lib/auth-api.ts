@@ -67,13 +67,14 @@ export async function checkAuth(): Promise<AuthResponse> {
 
 export async function loginAdmin(
   username: string,
-  password: string
+  password: string,
+  rememberMe = false
 ): Promise<AuthResponse> {
   const response = await fetch(apiUrl("/api/auth.php?action=login"), {
     method: "POST",
     headers: apiHeaders({ "Content-Type": "application/json" }),
     credentials: "include",
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, password, rememberMe }),
   });
   return parseAuthResponse(response);
 }

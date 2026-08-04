@@ -138,9 +138,10 @@ export const messages = {
       password: "Password",
       passwordPlaceholder: "Enter your password",
       rememberMe: "Remember me",
+      rememberMeHint: "Stay signed in for 1 week",
       forgotPassword: "Forgot password?",
       forgotPasswordHint:
-        "Contact your system administrator to reset your password, or sign in with an admin account via Settings.",
+        "Password cannot be reset by email. Ask your shop admin to set a new password under Settings → Staff. If you are the shop admin, contact the developer or use supabase/reset_admin_password.sql.",
       backToCustomer: "← Back to customer page",
       keyboardHint: "Press Enter to sign in",
       tooManyAttempts: "Too many failed attempts. Please wait a few minutes.",
@@ -252,6 +253,10 @@ export const messages = {
         actionsCol: "Actions",
         staffDeleted: "{username} permanently deleted.",
         deleteFailed: "Could not delete.",
+        resetPassword: "Reset password",
+        resetPasswordPrompt: "Enter a new password for {user} (min. 8 chars, 1 uppercase, 1 digit):",
+        passwordReset: "Password updated for {username}.",
+        resetFailed: "Could not reset password.",
       },
       sifre: {
         current: "Current password",

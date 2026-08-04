@@ -4,11 +4,28 @@ import type { NextResponse } from "next/server";
 
 export const SESSION_COOKIE = "ts_session";
 
+/** Varsayılan oturum: 24 saat */
+export const SESSION_TTL_DEFAULT_SEC = 86400;
+/** Beni hatırla: 7 gün */
+export const SESSION_TTL_REMEMBER_SEC = 7 * 86400;
+
 export interface SessionData {
   adminId: number;
   username: string;
   role: string;
   tenantId: number;
+}
+
+export type SessionTtl = {
+  jwtExp: string;
+  maxAgeSec: number;
+};
+
+export function sessionTtl(rememberMe: boolean): SessionTtl {
+  if (rememberMe) {
+    return { jwtExp: "7d", maxAgeSec: SESSION_TTL_REMEMBER_SEC };
+  }
+  return { jwtExp: "24h", maxAgeSec: SESSION_TTL_DEFAULT_SEC };
 }
 
 function getSecret(): Uint8Array {
@@ -19,11 +36,14 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(raw);
 }
 
-export async function signSession(data: SessionData): Promise<string> {
+export async function signSession(
+  data: SessionData,
+  ttl: SessionTtl = sessionTtl(false)
+): Promise<string> {
   return new SignJWT({ ...data })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("24h")
+    .setExpirationTime(ttl.jwtExp)
     .sign(getSecret());
 }
 
@@ -58,13 +78,14 @@ export async function getSessionFromCookies(): Promise<SessionData | null> {
 
 export function attachSessionCookie(
   response: NextResponse,
-  token: string
+  token: string,
+  maxAgeSec: number = SESSION_TTL_DEFAULT_SEC
 ): NextResponse {
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 86400,
+    maxAge: maxAgeSec,
     secure: process.env.NODE_ENV === "production",
   });
   return response;

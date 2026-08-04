@@ -99,7 +99,7 @@ export default function AdminLoginForm() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -158,7 +158,7 @@ export default function AdminLoginForm() {
     setLoading(true);
 
     try {
-      const result = await loginAdmin(trimmedUser, password);
+      const result = await loginAdmin(trimmedUser, password, rememberMe);
 
       if (!result.success) {
         recordFailure();
@@ -355,22 +355,25 @@ export default function AdminLoginForm() {
                   />
                 </div>
 
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-slate-400">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="flex cursor-pointer select-none items-start gap-2 text-sm text-slate-400">
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                       disabled={loading}
-                      className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500/30 focus:ring-offset-0"
+                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-blue-500/30 focus:ring-offset-0"
                     />
-                    {t("admin.login.rememberMe")}
+                    <span>
+                      <span className="block text-slate-300">{t("admin.login.rememberMe")}</span>
+                      <span className="block text-xs text-slate-500">{t("admin.login.rememberMeHint")}</span>
+                    </span>
                   </label>
                   <button
                     type="button"
                     onClick={handleForgotPassword}
                     disabled={loading}
-                    className="text-sm font-medium text-blue-400 transition hover:text-blue-300 disabled:opacity-60"
+                    className="self-end text-sm font-medium text-blue-400 transition hover:text-blue-300 disabled:opacity-60 sm:self-auto"
                   >
                     {t("admin.login.forgotPassword")}
                   </button>

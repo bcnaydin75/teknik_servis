@@ -9,6 +9,7 @@ import { jsonFail, jsonOk } from "../api-response";
 import {
   attachSessionCookie,
   clearSessionCookie,
+  sessionTtl,
   signSession,
 } from "../session";
 import { getSupabaseAdmin } from "../supabase";
@@ -18,7 +19,7 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   const db = getSupabaseAdmin();
 
   if (action === "login" && request.method === "POST") {
-    let body: { username?: string; password?: string };
+    let body: { username?: string; password?: string; rememberMe?: boolean };
     try {
       body = await request.json();
     } catch {
@@ -27,6 +28,7 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
 
     const username = (body.username ?? "").trim();
     const password = body.password ?? "";
+    const rememberMe = Boolean(body.rememberMe);
 
     if (!username || !password) {
       return jsonFail("Kullanıcı adı ve şifre zorunludur.", 400);
@@ -84,16 +86,25 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
       is_superadmin: Boolean(user.is_superadmin),
     });
 
-    const token = await signSession({
-      adminId: user.id,
-      username: user.username,
-      role: user.role ?? "admin",
-      tenantId,
-    });
+    const ttl = sessionTtl(rememberMe);
+    const token = await signSession(
+      {
+        adminId: user.id,
+        username: user.username,
+        role: user.role ?? "admin",
+        tenantId,
+      },
+      ttl
+    );
 
     const payload = await getCurrentUserPayload(user.id);
-    const res = jsonOk({ data: payload, message: "Giriş başarılı." });
-    return attachSessionCookie(res, token);
+    const res = jsonOk({
+      data: payload,
+      message: "Giriş başarılı.",
+      rememberMe,
+      sessionDays: rememberMe ? 7 : 1,
+    });
+    return attachSessionCookie(res, token, ttl.maxAgeSec);
   }
 
   if (action === "me" && request.method === "GET") {

@@ -137,9 +137,10 @@ export const messages = {
       password: "Password",
       passwordPlaceholder: "Inserisci la password",
       rememberMe: "Ricordami",
+      rememberMeHint: "Accesso automatico per 1 settimana",
       forgotPassword: "Password dimenticata?",
       forgotPasswordHint:
-        "Contatta l'amministratore di sistema per reimpostare la password o accedi con un account amministratore.",
+        "Il reset via email non è disponibile. Chiedi all'admin del negozio di impostare una nuova password in Impostazioni → Personale. Se sei l'admin, contatta lo sviluppatore o usa supabase/reset_admin_password.sql.",
       backToCustomer: "← Torna alla pagina cliente",
       keyboardHint: "Premi Invio per accedere",
       tooManyAttempts: "Troppi tentativi falliti. Attendi qualche minuto.",
@@ -251,6 +252,10 @@ export const messages = {
         actionsCol: "Azioni",
         staffDeleted: "{username} eliminato definitivamente.",
         deleteFailed: "Impossibile eliminare.",
+        resetPassword: "Reimposta password",
+        resetPasswordPrompt: "Nuova password per {user} (min. 8, 1 maiuscola, 1 cifra):",
+        passwordReset: "Password aggiornata per {username}.",
+        resetFailed: "Reimpostazione non riuscita.",
       },
       sifre: {
         current: "Password attuale",
