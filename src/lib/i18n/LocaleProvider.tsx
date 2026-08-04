@@ -33,7 +33,8 @@ const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-  const [ready, setReady] = useState(false);
+  // UI hemen açılsın — ayarlar arka planda yüklenir (mobil beyaz ekran önlemi)
+  const ready = true;
   const [showCostDetail, setShowCostDetail] = useState(true);
 
   const loadLocale = useCallback(async () => {
@@ -49,8 +50,6 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       /* keep default */
-    } finally {
-      setReady(true);
     }
   }, []);
 

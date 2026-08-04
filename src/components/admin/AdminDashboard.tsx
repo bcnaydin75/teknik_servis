@@ -45,16 +45,15 @@ export default function AdminDashboard() {
     setLoading(true);
 
     try {
-      const authRes = await checkAuth();
-      const perms = authRes.data?.permissions as Permissions | undefined;
-      const canSeePos = Boolean(perms?.pos || perms?.see_finance);
-      setShowPosStats(canSeePos);
-      setCanSeeCosts(Boolean(perms?.see_costs));
-
-      const [devicesRes, statsRes] = await Promise.all([
+      const [authRes, devicesRes, statsRes] = await Promise.all([
+        checkAuth(),
         fetchDevices({ q: q || undefined }),
         fetchDashboardStats(),
       ]);
+
+      const perms = authRes.data?.permissions as Permissions | undefined;
+      setShowPosStats(Boolean(perms?.pos || perms?.see_finance));
+      setCanSeeCosts(Boolean(perms?.see_costs));
 
       if (!devicesRes.success || !devicesRes.data) {
         setError(devicesRes.message ?? t("admin.dashboard.loadFailed"));

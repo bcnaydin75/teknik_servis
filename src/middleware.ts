@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  SESSION_COOKIE,
+  permissionsFromSession,
+  verifySessionToken,
+} from "@/lib/server/edge-session";
 
 const ROUTE_PERMS: Record<string, string> = {
   "/admin/inventory": "inventory",
@@ -10,11 +15,6 @@ const ROUTE_PERMS: Record<string, string> = {
   "/admin/settings": "settings",
 };
 
-function apiUrlFromOrigin(path: string, origin: string): string {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return new URL(normalized, origin).href;
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -22,46 +22,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/admin")) {
-    const cookie = request.headers.get("cookie") ?? "";
-    const meUrl = apiUrlFromOrigin("/api/auth.php?action=me", request.nextUrl.origin);
+  if (!pathname.startsWith("/admin")) {
+    return NextResponse.next();
+  }
 
-    try {
-      const res = await fetch(meUrl, { headers: { cookie }, cache: "no-store" });
-      if (!res.ok) {
-        throw new Error(`Auth check failed: ${res.status}`);
-      }
+  const token = request.cookies.get(SESSION_COOKIE)?.value;
+  if (!token) {
+    const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
-      const text = await res.text();
-      let data: {
-        success?: boolean;
-        data?: {
-          permissions?: Record<string, boolean>;
-          is_superadmin?: boolean;
-        };
-      };
-      try {
-        data = JSON.parse(text) as typeof data;
-      } catch {
-        throw new Error("Auth check returned invalid JSON");
-      }
+  const session = await verifySessionToken(token);
+  if (!session) {
+    const loginUrl = new URL("/admin/login", request.url);
+    loginUrl.searchParams.set("redirect", pathname);
+    const res = NextResponse.redirect(loginUrl);
+    res.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
+    return res;
+  }
 
-      if (!data.success) {
-        const loginUrl = new URL("/admin/login", request.url);
-        loginUrl.searchParams.set("redirect", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
+  const perms = permissionsFromSession(session);
 
-      const perms = data.data?.permissions ?? {};
-
-      for (const [route, perm] of Object.entries(ROUTE_PERMS)) {
-        if (pathname.startsWith(route) && !perms[perm]) {
-          return NextResponse.redirect(new URL("/admin", request.url));
-        }
-      }
-    } catch {
-      const loginUrl = new URL("/admin/login", request.url);
-      return NextResponse.redirect(loginUrl);
+  for (const [route, perm] of Object.entries(ROUTE_PERMS)) {
+    if (pathname.startsWith(route) && !perms[perm as keyof typeof perms]) {
+      return NextResponse.redirect(new URL("/admin", request.url));
     }
   }
 

@@ -10,7 +10,6 @@ import { LOCALES, LOCALE_FLAGS, type Locale } from "@/lib/i18n/config";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { fetchPublicSettings } from "@/lib/settings-api";
 import type { ShopSettings } from "@/types/settings";
-import AdminLoginSkeleton from "./AdminLoginSkeleton";
 import PasswordInput from "./PasswordInput";
 
 const REMEMBER_USERNAME_KEY = "admin_login_remember_username";
@@ -91,7 +90,7 @@ function AdminLoginBackground() {
 }
 
 export default function AdminLoginForm() {
-  const { t, locale, setLocale, ready } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/admin";
@@ -134,10 +133,6 @@ export default function AdminLoginForm() {
       errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [error]);
-
-  if (!ready) {
-    return <AdminLoginSkeleton />;
-  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

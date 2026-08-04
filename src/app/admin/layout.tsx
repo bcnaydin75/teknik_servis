@@ -27,10 +27,32 @@ export const metadata: Metadata = {
   },
 };
 
+/** İlk boyamada beyaz flash olmasın (JS yüklenmeden önce) */
+const themeBootScript = `
+(function(){
+  try {
+    var k='teknik-servis-admin-theme';
+    var t=localStorage.getItem(k)||'dark';
+    var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches)||t!=='light';
+    var c=dark?'#0f172a':'#f8fafc';
+    document.documentElement.style.backgroundColor=c;
+    document.documentElement.style.colorScheme=dark?'dark':'light';
+    if(document.body){document.body.style.backgroundColor=c;}
+  } catch(e) {
+    document.documentElement.style.backgroundColor='#0f172a';
+  }
+})();
+`;
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminThemeProvider>{children}</AdminThemeProvider>;
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      <AdminThemeProvider>{children}</AdminThemeProvider>
+    </>
+  );
 }
