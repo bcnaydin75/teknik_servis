@@ -186,11 +186,6 @@ export default function AdminLoginForm() {
     }
   }
 
-  function handleForgotPassword() {
-    setError(null);
-    setInfo(t("admin.login.forgotPasswordHint"));
-  }
-
   function handleLocaleChange(next: Locale) {
     setLocale(next);
   }
@@ -364,14 +359,12 @@ export default function AdminLoginForm() {
                       <span className="block text-xs text-slate-500">{t("admin.login.rememberMeHint")}</span>
                     </span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    disabled={loading}
-                    className="self-end text-sm font-medium text-blue-400 transition hover:text-blue-300 disabled:opacity-60 sm:self-auto"
+                  <Link
+                    href="/admin/forgot-password"
+                    className="self-end text-sm font-medium text-blue-400 transition hover:text-blue-300 sm:self-auto"
                   >
                     {t("admin.login.forgotPassword")}
-                  </button>
+                  </Link>
                 </div>
               </div>
 

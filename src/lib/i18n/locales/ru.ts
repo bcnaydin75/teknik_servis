@@ -148,6 +148,23 @@ export const messages = {
       submitting: "Вход...",
       loading: "Загрузка...",
     },
+    forgotPassword: {
+      title: "Забыли пароль",
+      subtitle:
+        "Для аккаунта админа магазина подтвердите телефон из профиля и задайте новый пароль.",
+      phone: "Телефон магазина",
+      phonePlaceholder: "0555 123 45 67",
+      phoneHint: "Номер из Настройки → Профиль компании",
+      newPassword: "Новый пароль",
+      newPasswordPlaceholder: "Введите новый пароль",
+      confirmPassword: "Повтор пароля",
+      confirmPasswordPlaceholder: "Повторите новый пароль",
+      submit: "Обновить пароль",
+      backToLogin: "← К входу",
+      mismatch: "Пароли не совпадают.",
+      success: "Пароль обновлён. Переход ко входу…",
+      failed: "Не удалось сбросить пароль.",
+    },
     shell: {
       addDeviceAria: "Добавить новое устройство",
     },

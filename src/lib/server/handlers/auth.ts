@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { validatePassword } from "@/lib/password";
 import {
   getCurrentUserPayload,
+  hashPassword,
   requireSession,
   resolveSessionTenantId,
   verifyPassword,
@@ -14,6 +16,21 @@ import {
 } from "../session";
 import { getSupabaseAdmin } from "../supabase";
 import { Tables } from "../db-tables";
+
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+function phonesMatch(a: string, b: string): boolean {
+  const da = digitsOnly(a);
+  const db = digitsOnly(b);
+  if (!da || !db) return false;
+  // Son 10 hane (TR cep) veya tam eşleşme
+  if (da === db) return true;
+  const ta = da.length > 10 ? da.slice(-10) : da;
+  const tb = db.length > 10 ? db.slice(-10) : db;
+  return ta.length >= 10 && ta === tb;
+}
 export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   const action = request.nextUrl.searchParams.get("action") ?? "";
   const db = getSupabaseAdmin();
@@ -118,6 +135,94 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   if (action === "logout" && request.method === "POST") {
     const res = jsonOk({ message: "Çıkış yapıldı." });
     return clearSessionCookie(res);
+  }
+
+  // Dükkan admini kendi şifresini unuttu: kullanıcı adı + firma telefonu ile doğrula
+  if (action === "forgot_password" && request.method === "POST") {
+    let body: {
+      username?: string;
+      phone?: string;
+      new_password?: string;
+      confirm_password?: string;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return jsonFail("Geçersiz istek.", 400);
+    }
+
+    const username = (body.username ?? "").trim();
+    const phone = (body.phone ?? "").trim();
+    const newPassword = body.new_password ?? "";
+    const confirmPassword = body.confirm_password ?? "";
+
+    if (!username || !phone || !newPassword) {
+      return jsonFail("Kullanıcı adı, telefon ve yeni şifre zorunludur.", 400);
+    }
+    if (newPassword !== confirmPassword) {
+      return jsonFail("Yeni şifreler eşleşmiyor.", 400);
+    }
+    const pwdErr = validatePassword(newPassword);
+    if (pwdErr) return jsonFail(pwdErr, 400);
+
+    const { data: user } = await db
+      .from(Tables.yoneticiKullanicilar)
+      .select("*")
+      .ilike("username", username)
+      .maybeSingle();
+
+    if (!user || !user.aktif) {
+      return jsonFail("Kullanıcı bulunamadı veya hesap pasif.", 404);
+    }
+
+    if (user.is_superadmin) {
+      return jsonFail(
+        "Geliştirici hesabı bu form ile sıfırlanamaz. Veritabanı yöneticisine başvurun.",
+        403
+      );
+    }
+
+    const tenantId = Number(user.tenant_id ?? user.id);
+    const isOwner = tenantId === Number(user.id);
+    if (!isOwner) {
+      return jsonFail(
+        "Personel şifresi bu form ile sıfırlanamaz. Dükkan yöneticinizden Ayarlar → Personel → Şifre sıfırla isteyin.",
+        403
+      );
+    }
+
+    const { data: shop } = await db
+      .from(Tables.dukkanAyarlari)
+      .select("telefon")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
+    const shopPhone = (shop?.telefon ?? "").trim();
+    if (!shopPhone) {
+      return jsonFail(
+        "Firma profilinde telefon kayıtlı değil. Ayarlar → Firma Profili'ne telefon ekleyin (giriş yaptıktan sonra) veya geliştiriciye başvurun.",
+        400
+      );
+    }
+
+    if (!phonesMatch(phone, shopPhone)) {
+      return jsonFail(
+        "Telefon doğrulanamadı. Firma profilindeki telefon numarasını girin.",
+        403
+      );
+    }
+
+    const { error: updErr } = await db
+      .from(Tables.yoneticiKullanicilar)
+      .update({
+        password_hash: await hashPassword(newPassword),
+        must_change_password: false,
+      })
+      .eq("id", user.id);
+
+    if (updErr) return jsonFail("Şifre güncellenemedi.", 500);
+
+    return jsonOk({ message: "Şifreniz güncellendi. Yeni şifreyle giriş yapabilirsiniz." });
   }
 
   return jsonFail("Geçersiz istek.", 405);

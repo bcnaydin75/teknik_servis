@@ -152,6 +152,23 @@ export const messages = {
       submitting: "Giriş yapılıyor...",
       loading: "Yükleniyor...",
     },
+    forgotPassword: {
+      title: "Şifremi unuttum",
+      subtitle:
+        "Dükkan admini hesabınız için firma profilindeki telefon ile doğrulayıp yeni şifre belirleyin.",
+      phone: "Firma telefonu",
+      phonePlaceholder: "0555 123 45 67",
+      phoneHint: "Ayarlar → Firma Profili'nde kayıtlı telefon numarası",
+      newPassword: "Yeni şifre",
+      newPasswordPlaceholder: "Yeni şifrenizi giriniz",
+      confirmPassword: "Yeni şifre tekrar",
+      confirmPasswordPlaceholder: "Yeni şifreyi tekrar giriniz",
+      submit: "Şifreyi güncelle",
+      backToLogin: "← Giriş sayfasına dön",
+      mismatch: "Yeni şifreler eşleşmiyor.",
+      success: "Şifreniz güncellendi. Giriş sayfasına yönlendiriliyorsunuz…",
+      failed: "Şifre sıfırlanamadı.",
+    },
     shell: {
       addDeviceAria: "Yeni cihaz ekle",
     },

@@ -148,6 +148,23 @@ export const messages = {
       submitting: "Accesso in corso...",
       loading: "Caricamento...",
     },
+    forgotPassword: {
+      title: "Password dimenticata",
+      subtitle:
+        "Per account admin negozio, verifica con il telefono del profilo e imposta una nuova password.",
+      phone: "Telefono negozio",
+      phonePlaceholder: "0555 123 45 67",
+      phoneHint: "Numero salvato in Impostazioni → Profilo azienda",
+      newPassword: "Nuova password",
+      newPasswordPlaceholder: "Inserisci nuova password",
+      confirmPassword: "Conferma password",
+      confirmPasswordPlaceholder: "Reinserisci nuova password",
+      submit: "Aggiorna password",
+      backToLogin: "← Torna all'accesso",
+      mismatch: "Le password non coincidono.",
+      success: "Password aggiornata. Reindirizzamento…",
+      failed: "Reimpostazione non riuscita.",
+    },
     shell: {
       addDeviceAria: "Aggiungi nuovo dispositivo",
     },

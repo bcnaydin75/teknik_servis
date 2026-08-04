@@ -149,6 +149,23 @@ export const messages = {
       submitting: "Signing in...",
       loading: "Loading...",
     },
+    forgotPassword: {
+      title: "Forgot password",
+      subtitle:
+        "For shop admin accounts, verify with your shop profile phone and set a new password.",
+      phone: "Shop phone",
+      phonePlaceholder: "0555 123 45 67",
+      phoneHint: "Phone number saved under Settings → Company Profile",
+      newPassword: "New password",
+      newPasswordPlaceholder: "Enter new password",
+      confirmPassword: "Confirm new password",
+      confirmPasswordPlaceholder: "Re-enter new password",
+      submit: "Update password",
+      backToLogin: "← Back to sign in",
+      mismatch: "Passwords do not match.",
+      success: "Password updated. Redirecting to sign in…",
+      failed: "Could not reset password.",
+    },
     shell: {
       addDeviceAria: "Add new device",
     },

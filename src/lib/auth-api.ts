@@ -79,6 +79,21 @@ export async function loginAdmin(
   return parseAuthResponse(response);
 }
 
+export async function forgotPasswordAdmin(payload: {
+  username: string;
+  phone: string;
+  new_password: string;
+  confirm_password: string;
+}): Promise<AuthResponse> {
+  const response = await fetch(apiUrl("/api/auth.php?action=forgot_password"), {
+    method: "POST",
+    headers: apiHeaders({ "Content-Type": "application/json" }),
+    credentials: "include",
+    body: JSON.stringify(payload),
+  });
+  return parseAuthResponse(response);
+}
+
 export async function logoutAdmin(): Promise<AuthResponse> {
   const response = await fetch(apiUrl("/api/auth.php?action=logout"), {
     method: "POST",

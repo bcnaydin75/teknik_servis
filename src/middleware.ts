@@ -18,7 +18,7 @@ const ROUTE_PERMS: Record<string, string> = {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/admin/login")) {
+  if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/forgot-password")) {
     return NextResponse.next();
   }
 
