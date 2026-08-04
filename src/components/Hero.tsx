@@ -15,7 +15,8 @@ export default function Hero() {
     });
   }, []);
 
-  const firmaAdi = shop?.firma_adi ?? t("customer.hero.defaultShopName");
+  const systemBrand = t("customer.hero.defaultShopName");
+  const firmaAdi = shop?.firma_adi?.trim() || null;
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 px-4 pb-16 pt-[calc(env(safe-area-inset-top,0px)+4rem)] sm:px-6 sm:pb-24 sm:pt-[calc(env(safe-area-inset-top,0px)+6rem)] lg:px-8">
@@ -24,8 +25,11 @@ export default function Hero() {
 
       <div className="relative mx-auto max-w-4xl text-center">
         <span className="mb-4 inline-flex items-center rounded-full bg-blue-500/10 px-4 py-1.5 text-sm font-medium text-blue-200 ring-1 ring-blue-400/30">
-          {firmaAdi}
+          {systemBrand}
         </span>
+        {firmaAdi && firmaAdi.toLocaleLowerCase("tr") !== systemBrand.toLocaleLowerCase("tr") && (
+          <p className="mb-2 text-sm font-medium text-blue-100/90">{firmaAdi}</p>
+        )}
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
           {t("customer.hero.headline")}{" "}
           <span className="bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
