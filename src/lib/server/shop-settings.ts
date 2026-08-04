@@ -25,11 +25,13 @@ export async function resolveTenantIdByShopSlug(
   const db = getSupabaseAdmin();
   const { data } = await db
     .from(Tables.yoneticiKullanicilar)
-    .select("id, tenant_id")
+    .select("id, tenant_id, is_superadmin")
     .eq("username", shop)
     .maybeSingle();
 
   if (!data) return null;
+  // Platform geliştirici dükkan değil — public sorguda filtreleme yapma
+  if (data.is_superadmin) return null;
   const tid = data.tenant_id ?? data.id;
   return tid > 0 ? tid : data.id;
 }

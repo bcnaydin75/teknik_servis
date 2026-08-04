@@ -450,16 +450,21 @@ export async function handleDeleteDevice(request: NextRequest): Promise<NextResp
 export async function handleRepairStatus(
   request: NextRequest
 ): Promise<NextResponse> {
-  const takipKodu = (request.nextUrl.searchParams.get("takip_kodu") ?? "").trim();
+  const takipKodu = (request.nextUrl.searchParams.get("takip_kodu") ?? "")
+    .trim()
+    .toUpperCase();
   if (!takipKodu) return jsonFail("Takip kodu gereklidir.", 400);
 
   const db = getSupabaseAdmin();
   const shop = (request.nextUrl.searchParams.get("shop") ?? "").trim();
 
+  // Takip kodları dükkan önekli (APH-26-001) — global arama yeterli.
+  // shop=bcnaydin75 gibi geliştirici slug'ı yanlışlıkla tüm kayıtları ezerdi.
   let query = db
     .from(Tables.tamirKayitlari)
-    .select(`*, ${Tables.musteriler}!inner(ad_soyad)`)
-    .eq("takip_kodu", takipKodu);
+    .select(`*, ${Tables.musteriler}(ad_soyad)`)
+    .ilike("takip_kodu", takipKodu)
+    .limit(1);
 
   if (shop) {
     const { resolveTenantIdByShopSlug } = await import("../shop-settings");
@@ -467,17 +472,23 @@ export async function handleRepairStatus(
     if (tenantId) query = query.eq("tenant_id", tenantId);
   }
 
-  const { data: row, error } = await query.maybeSingle();
-  if (error || !row) return jsonFail("Kayıt bulunamadı.", 404);
+  const { data: rows, error } = await query;
+  const row = Array.isArray(rows) ? rows[0] : rows;
 
-  const customer = row[Tables.musteriler] as { ad_soyad: string };
+  if (error) {
+    console.error("[repair-status]", error.message, error.code, error.details);
+    return jsonFail("Kayıt bulunamadı.", 404);
+  }
+  if (!row) return jsonFail("Kayıt bulunamadı.", 404);
+
+  const customer = (row[Tables.musteriler] ?? {}) as { ad_soyad?: string };
   const settingsTenant = row.tenant_id as number;
   const { getShopSettingsForTenant } = await import("../shop-settings");
   const shopSettings = await getShopSettingsForTenant(settingsTenant);
 
   let data: Record<string, unknown> = {
     takip_kodu: row.takip_kodu,
-    musteri_adi: customer.ad_soyad,
+    musteri_adi: customer.ad_soyad ?? "—",
     cihaz_modeli: row.cihaz_modeli,
     cihaz_durumu: row.cihaz_durumu,
     degisen_parcalar: parseParts(row.degisen_parcalar),

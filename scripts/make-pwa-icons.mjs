@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * PWA ikonları — amblem ortada, koyu zemin kareyi tamamen kaplar (beyaz köşe yok).
- * Kullanım: node scripts/make-pwa-icons.mjs
+ * PWA ikonları — kullanıcı örneğindeki gibi amblem;
+ * dış zemin amblemin içi gibi koyu (mor/beyaz yok), kareyi tamamen kaplar.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -20,8 +20,8 @@ if (!fs.existsSync(srcPath)) {
 
 fs.mkdirSync(outDir, { recursive: true });
 
-/** Teknik Servis ikonundaki gibi koyu lacivert zemin */
-const BG = { r: 15, g: 23, b: 42, alpha: 1 }; // #0f172a
+/** Amblem içi gibi koyu lacivert-siyah (mor değil) */
+const BG = { r: 8, g: 10, b: 22, alpha: 1 };
 
 function circleMask(size) {
   const r = size / 2;
@@ -30,7 +30,6 @@ function circleMask(size) {
   );
 }
 
-/** Sadece gümüş amblemi kes (şeffaf dışı) */
 async function extractBadgeOnly() {
   const { data, info } = await sharp(srcPath)
     .raw()
@@ -93,7 +92,8 @@ async function extractBadgeOnly() {
     const isCyan = b > 90 && b >= r;
     const isMetal = lum > 80 && Math.abs(r - g) < 50 && r > 65;
     const isBlueText = b > 50 && b >= g && b >= r - 10 && lum > 35 && lum < 160;
-    if (!isCyan && !isMetal && !isBlueText && lum < 70) {
+    // Mor / koyu zemin / parıltı — hepsi şeffaf; sadece amblem kalsın
+    if (!isCyan && !isMetal && !isBlueText) {
       d[i + 3] = 0;
     }
   }
@@ -122,10 +122,6 @@ async function extractBadgeOnly() {
     .toBuffer();
 }
 
-/**
- * Koyu kare zemin (köşeye kadar) + ortada amblem.
- * fillRatio: amblemin kareye oranı (any ~0.88, maskable ~0.72)
- */
 async function makeFilledIcon(canvasSize, fillRatio, outFile) {
   const badge = await extractBadgeOnly();
   const logoSize = Math.round(canvasSize * fillRatio);
@@ -153,16 +149,10 @@ async function makeFilledIcon(canvasSize, fillRatio, outFile) {
   console.log("wrote", path.relative(root, outFile));
 }
 
-await makeFilledIcon(192, 0.9, path.join(outDir, "icon-192.png"));
-await makeFilledIcon(512, 0.9, path.join(outDir, "icon-512.png"));
-// Maskable: OS köşe keser — amblem güvenli alanda
-await makeFilledIcon(512, 0.72, path.join(outDir, "icon-maskable-512.png"));
-await makeFilledIcon(180, 0.9, path.join(root, "public/apple-touch-icon.png"));
-await makeFilledIcon(32, 0.92, path.join(root, "public/favicon.png"));
+await makeFilledIcon(192, 0.92, path.join(outDir, "icon-192.png"));
+await makeFilledIcon(512, 0.92, path.join(outDir, "icon-512.png"));
+await makeFilledIcon(512, 0.75, path.join(outDir, "icon-maskable-512.png"));
+await makeFilledIcon(180, 0.92, path.join(root, "public/apple-touch-icon.png"));
+await makeFilledIcon(32, 0.94, path.join(root, "public/favicon.png"));
 
-for (const f of ["_t.png", "_t2.png", "_badge-preview.png"]) {
-  const p = path.join(outDir, f);
-  if (fs.existsSync(p)) fs.unlinkSync(p);
-}
-
-console.log("PWA ikonları güncellendi (koyu zemin, tam kaplama, beyaz yok).");
+console.log("PWA ikonları güncellendi.");
