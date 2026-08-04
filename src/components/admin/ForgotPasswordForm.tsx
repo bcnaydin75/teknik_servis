@@ -24,12 +24,14 @@ export default function ForgotPasswordForm() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   async function handleRequest(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
+    setInfo(null);
+    setDone(false);
     if (!username.trim()) {
       setError(t("errors.requiredFields"));
       return;
@@ -44,7 +46,7 @@ export default function ForgotPasswordForm() {
       setResetToken(res.data.resetToken);
       setEmailHint(res.data.emailHint ?? "");
       setStep("confirm");
-      setSuccess(
+      setInfo(
         t("admin.forgotPassword.codeSent", {
           email: res.data.emailHint ?? "",
         })
@@ -59,7 +61,7 @@ export default function ForgotPasswordForm() {
   async function handleConfirm(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
+    setInfo(null);
     if (!code.trim() || !password) {
       setError(t("errors.requiredFields"));
       return;
@@ -80,7 +82,8 @@ export default function ForgotPasswordForm() {
         setError(res.message ?? t("admin.forgotPassword.failed"));
         return;
       }
-      setSuccess(res.message ?? t("admin.forgotPassword.success"));
+      setDone(true);
+      setInfo(res.message ?? t("admin.forgotPassword.success"));
       setTimeout(() => router.replace("/admin/login"), 1600);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.connection"));
@@ -118,9 +121,9 @@ export default function ForgotPasswordForm() {
             {error}
           </div>
         )}
-        {success && (
+        {info && (
           <div role="status" className="mt-5 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-            {success}
+            {info}
           </div>
         )}
 
@@ -161,7 +164,7 @@ export default function ForgotPasswordForm() {
                 autoComplete="one-time-code"
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                disabled={loading || Boolean(success)}
+                disabled={loading || done}
                 className="mt-2 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center font-mono text-xl tracking-[0.35em] text-white outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
                 placeholder="000000"
               />
@@ -178,7 +181,7 @@ export default function ForgotPasswordForm() {
                   onChange={setPassword}
                   placeholder={t("admin.forgotPassword.newPasswordPlaceholder")}
                   autoComplete="new-password"
-                  disabled={loading || Boolean(success)}
+                  disabled={loading || done}
                   className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 pr-14 text-white placeholder:text-slate-400 outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
                   toggleClassName="text-slate-300 hover:bg-white/10 hover:text-white"
                 />
@@ -196,7 +199,7 @@ export default function ForgotPasswordForm() {
                   onChange={setConfirm}
                   placeholder={t("admin.forgotPassword.confirmPasswordPlaceholder")}
                   autoComplete="new-password"
-                  disabled={loading || Boolean(success)}
+                  disabled={loading || done}
                   className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 pr-14 text-white placeholder:text-slate-400 outline-none focus:border-blue-400/50 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
                   toggleClassName="text-slate-300 hover:bg-white/10 hover:text-white"
                 />
@@ -206,7 +209,7 @@ export default function ForgotPasswordForm() {
 
             <button
               type="submit"
-              disabled={loading || Boolean(success)}
+              disabled={loading || done}
               className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 text-sm font-semibold text-white shadow-lg disabled:opacity-60"
             >
               {loading ? t("common.saving") : t("admin.forgotPassword.submit")}
@@ -214,14 +217,15 @@ export default function ForgotPasswordForm() {
 
             <button
               type="button"
-              disabled={loading || Boolean(success)}
+              disabled={loading || done}
               onClick={() => {
                 setStep("request");
                 setCode("");
                 setPassword("");
                 setConfirm("");
                 setResetToken("");
-                setSuccess(null);
+                setInfo(null);
+                setDone(false);
                 setError(null);
               }}
               className="w-full text-sm text-slate-400 hover:text-white disabled:opacity-60"
