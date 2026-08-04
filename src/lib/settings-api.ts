@@ -138,7 +138,12 @@ export async function submitPosSale(payload: {
   payment_type: string;
   customer_id?: number;
   description?: string;
-}): Promise<{ success: boolean; message?: string; data?: { sale_id: number; total: number } }> {
+  discount?: number;
+}): Promise<{
+  success: boolean;
+  message?: string;
+  data?: { sale_id: number; total: number; discount?: number; subtotal?: number };
+}> {
   const res = await fetch(apiUrl("/api/pos.php"), {
     ...fetchOpts,
     method: "POST",

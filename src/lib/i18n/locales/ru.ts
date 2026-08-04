@@ -413,6 +413,9 @@ export const messages = {
       saleFailed: "Не удалось выполнить продажу.",
       saleSuccess: "Продажа завершена.",
       saleSuccessAmount: "Продажа завершена — {amount}",
+      subtotal: "Подытог",
+      discount: "Скидка",
+      discountOptional: "необязательно",
     },
     finance: {
       title: "Касса / Финансы",

@@ -75,14 +75,26 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
 
     if (!tenantId) return jsonFail("Dükkan bağlamı bulunamadı.", 400);
 
+    const rawDiscount = Number(body.discount ?? body.indirim ?? 0);
+    const discount =
+      Number.isFinite(rawDiscount) && rawDiscount > 0
+        ? Math.min(rawDiscount, total)
+        : 0;
+    const payable = Math.round((total - discount) * 100) / 100;
+
+    const descParts: string[] = [];
+    const bodyDesc = (body.description ?? "").trim();
+    if (bodyDesc) descParts.push(bodyDesc);
+    if (discount > 0) descParts.push(`İndirim: ${discount.toFixed(2)} TL`);
+
     const { data: sale, error: saleErr } = await db
       .from(Tables.posSatislar)
       .insert({
         tenant_id: tenantId,
         customer_id: customerId,
         payment_type: paymentType,
-        total_amount: total,
-        description: (body.description ?? "").trim() || null,
+        total_amount: payable,
+        description: descParts.length ? descParts.join(" · ") : null,
         created_by: auth.user.id,
       })
       .select("id")
@@ -110,14 +122,19 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    await db.from(Tables.finansIslemleri).insert({
-      tenant_id: tenantId,
-      type: "income",
-      amount: total,
-      description: `POS satış #${sale.id}`,
-    });
+    if (payable > 0) {
+      await db.from(Tables.finansIslemleri).insert({
+        tenant_id: tenantId,
+        type: "income",
+        amount: payable,
+        description:
+          discount > 0
+            ? `POS satış #${sale.id} (indirim ${discount.toFixed(2)} TL)`
+            : `POS satış #${sale.id}`,
+      });
+    }
 
-    if (paymentType === "veresiye" && customerId) {
+    if (paymentType === "veresiye" && customerId && payable > 0) {
       const { data: cust } = await db
         .from(Tables.musteriler)
         .select("cari_bakiye")
@@ -127,14 +144,14 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
       if (cust) {
         await db
           .from(Tables.musteriler)
-          .update({ cari_bakiye: Number(cust.cari_bakiye) + total })
+          .update({ cari_bakiye: Number(cust.cari_bakiye) + payable })
           .eq("id", customerId);
 
         await db.from(Tables.cariIslemleri).insert({
           tenant_id: tenantId,
           customer_id: customerId,
           type: "borc",
-          amount: total,
+          amount: payable,
           description: `POS veresiye #${sale.id}`,
           pos_sale_id: sale.id,
         });
@@ -143,7 +160,7 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
 
     return jsonOk({
       message: "Satış tamamlandı.",
-      data: { sale_id: sale.id, total },
+      data: { sale_id: sale.id, total: payable, discount, subtotal: total },
     });
   }
 

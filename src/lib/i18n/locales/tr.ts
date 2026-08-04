@@ -432,6 +432,9 @@ export const messages = {
       saleFailed: "Satış başarısız.",
       saleSuccess: "Satış tamamlandı.",
       saleSuccessAmount: "Satış tamamlandı — {amount}",
+      subtotal: "Ara toplam",
+      discount: "İndirim",
+      discountOptional: "opsiyonel",
     },
     finance: {
       title: "Kasa / Finans",

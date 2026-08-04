@@ -20,6 +20,7 @@ export default function PosPage() {
   const [customer, setCustomer] = useState<CariCustomer | null>(null);
   const [searchQ, setSearchQ] = useState("");
   const [searchResults, setSearchResults] = useState<CariCustomer[]>([]);
+  const [discountInput, setDiscountInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -32,12 +33,22 @@ export default function PosPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => cart.reduce((sum, c) => sum + c.item.sell_price * c.quantity, 0),
     [cart]
   );
+
+  const discount = useMemo(() => {
+    const raw = Number(String(discountInput).replace(",", "."));
+    if (!Number.isFinite(raw) || raw <= 0) return 0;
+    return Math.min(raw, subtotal);
+  }, [discountInput, subtotal]);
+
+  const total = Math.round((subtotal - discount) * 100) / 100;
 
   function addToCart(item: PosItem) {
     setCart((prev) => {
@@ -66,20 +77,30 @@ export default function PosPage() {
 
   async function handleSearch(q: string) {
     setSearchQ(q);
-    if (q.length < 2) { setSearchResults([]); return; }
+    if (q.length < 2) {
+      setSearchResults([]);
+      return;
+    }
     const res = await searchCariCustomers(q);
     if (res.success && res.data) setSearchResults(res.data);
   }
 
   async function handleCheckout() {
-    if (cart.length === 0) { setError(t("admin.pos.emptyCart")); return; }
-    if (paymentType === "veresiye" && !customer) { setError(t("admin.pos.creditNeedsCustomer")); return; }
+    if (cart.length === 0) {
+      setError(t("admin.pos.emptyCart"));
+      return;
+    }
+    if (paymentType === "veresiye" && !customer) {
+      setError(t("admin.pos.creditNeedsCustomer"));
+      return;
+    }
     setSubmitting(true);
     setError(null);
     const res = await submitPosSale({
       items: cart.map((c) => ({ inventory_id: c.item.id, quantity: c.quantity })),
       payment_type: paymentType,
       customer_id: customer?.id,
+      discount: discount > 0 ? discount : undefined,
     });
     setSubmitting(false);
     if (res.success) {
@@ -88,39 +109,54 @@ export default function PosPage() {
       setCart([]);
       setCustomer(null);
       setSearchQ("");
+      setDiscountInput("");
       load();
     } else setError(res.message ?? t("admin.pos.saleFailed"));
   }
 
   return (
     <AdminShell title={t("admin.pos.title")} subtitle={t("admin.pos.subtitle")}>
-      {message && <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</div>}
-      {error && <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {message && (
+        <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+          {message}
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="order-2 lg:order-1 lg:col-span-2">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {loading ? (
               <p className="text-slate-500">{t("common.loading")}</p>
-            ) : items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => addToCart(item)}
-                className="rounded-xl bg-white p-4 text-left ring-1 ring-slate-200 transition hover:ring-blue-400 dark:bg-slate-800 dark:ring-slate-700"
-              >
-                <p className="font-medium text-slate-900 dark:text-white">{item.part_name}</p>
-                <p className="mt-1 text-lg font-bold text-blue-600">{formatCurrency(item.sell_price, locale)}</p>
-                <p className="mt-1 text-xs text-slate-500">{t("admin.pos.stock", { qty: item.stock_quantity })}</p>
-              </button>
-            ))}
+            ) : (
+              items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => addToCart(item)}
+                  className="rounded-xl bg-white p-4 text-left ring-1 ring-slate-200 transition hover:ring-blue-400 dark:bg-slate-800 dark:ring-slate-700 dark:hover:ring-cyan-400"
+                >
+                  <p className="font-medium text-slate-900 dark:text-white">{item.part_name}</p>
+                  <p className="mt-1 text-lg font-bold text-blue-600 dark:text-cyan-300">
+                    {formatCurrency(item.sell_price, locale)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {t("admin.pos.stock", { qty: item.stock_quantity })}
+                  </p>
+                </button>
+              ))
+            )}
           </div>
         </div>
 
         <div className="order-1 rounded-2xl bg-white p-5 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 lg:order-2">
           <h3 className="font-bold text-slate-900 dark:text-white">{t("admin.pos.cart")}</h3>
           {cart.length === 0 ? (
-            <p className="mt-4 text-sm text-slate-500">{t("admin.pos.selectProduct")}</p>
+            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">{t("admin.pos.selectProduct")}</p>
           ) : (
             <ul className="mt-4 space-y-3">
               {cart.map((c) => (
@@ -150,7 +186,7 @@ export default function PosPage() {
                       +
                     </button>
                   </div>
-                  <span className="shrink-0 font-semibold text-slate-900 dark:text-white">
+                  <span className="shrink-0 font-semibold text-slate-900 dark:text-cyan-200">
                     {formatCurrency(c.item.sell_price * c.quantity, locale)}
                   </span>
                 </li>
@@ -158,13 +194,59 @@ export default function PosPage() {
             </ul>
           )}
 
-          <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
-            <p className="text-lg font-bold text-slate-900 dark:text-white">{t("common.total")}: {formatCurrency(total, locale)}</p>
+          <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 dark:border-slate-700">
+            <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+              <span>{t("admin.pos.subtotal")}</span>
+              <span className="font-medium">{formatCurrency(subtotal, locale)}</span>
+            </div>
+
+            <div>
+              <label
+                htmlFor="pos-discount"
+                className="text-sm font-medium text-slate-700 dark:text-slate-300"
+              >
+                {t("admin.pos.discount")}{" "}
+                <span className="font-normal text-slate-400">({t("admin.pos.discountOptional")})</span>
+              </label>
+              <div className="relative mt-1.5">
+                <input
+                  id="pos-discount"
+                  type="number"
+                  min={0}
+                  max={subtotal || undefined}
+                  step="0.01"
+                  inputMode="decimal"
+                  value={discountInput}
+                  onChange={(e) => setDiscountInput(e.target.value)}
+                  placeholder="0"
+                  disabled={cart.length === 0}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-3 pr-12 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white disabled:opacity-50"
+                />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
+                  TL
+                </span>
+              </div>
+              {discount > 0 && (
+                <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
+                  −{formatCurrency(discount, locale)}
+                </p>
+              )}
+            </div>
+
+            <p className="pt-1 text-lg font-bold text-slate-900 dark:text-white">
+              {t("common.total")}: {formatCurrency(total, locale)}
+            </p>
           </div>
 
           <div className="mt-4 space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{t("admin.pos.payment")}</label>
-            <select value={paymentType} onChange={(e) => setPaymentType(e.target.value as typeof paymentType)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {t("admin.pos.payment")}
+            </label>
+            <select
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value as typeof paymentType)}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+            >
               <option value="nakit">{t("admin.pos.cash")}</option>
               <option value="kart">{t("admin.pos.card")}</option>
               <option value="veresiye">{t("admin.pos.credit")}</option>
@@ -180,13 +262,22 @@ export default function PosPage() {
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"
               />
               {customer && (
-                <p className="mt-2 text-sm text-blue-600">{t("admin.pos.selectedCustomer", { name: customer.ad_soyad })}</p>
+                <p className="mt-2 text-sm text-blue-600 dark:text-cyan-300">
+                  {t("admin.pos.selectedCustomer", { name: customer.ad_soyad })}
+                </p>
               )}
               {searchResults.length > 0 && !customer && (
                 <ul className="mt-2 max-h-32 overflow-y-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-600">
                   {searchResults.map((c) => (
                     <li key={c.id}>
-                      <button type="button" onClick={() => { setCustomer(c); setSearchResults([]); }} className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomer(c);
+                          setSearchResults([]);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-700"
+                      >
                         {c.ad_soyad} {c.telefon && `— ${c.telefon}`}
                       </button>
                     </li>

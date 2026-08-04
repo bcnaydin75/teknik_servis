@@ -414,6 +414,9 @@ export const messages = {
       saleFailed: "Sale failed.",
       saleSuccess: "Sale completed.",
       saleSuccessAmount: "Sale completed — {amount}",
+      subtotal: "Subtotal",
+      discount: "Discount",
+      discountOptional: "optional",
     },
     finance: {
       title: "Cash / Finance",
