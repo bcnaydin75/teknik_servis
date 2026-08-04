@@ -43,6 +43,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
   const [garantiVer, setGarantiVer] = useState(false);
   const [warrantyEnabled, setWarrantyEnabled] = useState<Record<number, boolean>>({});
   const [status, setStatus] = useState<string>("");
+  const [odemeSekli, setOdemeSekli] = useState<"nakit" | "kart" | "veresiye" | "beklemede">("nakit");
   const [imeiNo, setImeiNo] = useState("");
   const [cihazSifresi, setCihazSifresi] = useState("");
   const [showDevicePassword, setShowDevicePassword] = useState(false);
@@ -64,6 +65,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
     return runAfterEffect(() => {
       setError(null);
       setStatus(device.cihaz_durumu);
+      setOdemeSekli("nakit");
       setRiskli(device.riskli_musteri);
       setRiskNotu(device.risk_notu ?? "");
       setImeiNo(device.imei_no ?? "");
@@ -197,6 +199,10 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
         iscilik_ucreti: canSeeCosts ? iscilikUcreti : device!.iscilik_ucreti,
         indirim: canSeeCosts ? indirim : 0,
         toplam_ucret: canSeeCosts ? toplamUcret : device!.toplam_ucret,
+        odeme_sekli:
+          newStatus === "teslim_edildi" && device!.cihaz_durumu !== "teslim_edildi"
+            ? odemeSekli
+            : undefined,
         aciklama: String(form.get("aciklama") ?? "").trim() || undefined,
         imei_no: imeiNo.trim() || undefined,
         cihaz_sifresi: cihazSifresi.trim() || undefined,
@@ -299,6 +305,32 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                   <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
                     {t("admin.modals.editDevice.deliveryHint")}
                   </p>
+                )}
+                {status === "teslim_edildi" && device.cihaz_durumu !== "teslim_edildi" && (
+                  <div className="mt-3">
+                    <label htmlFor="odeme_sekli" className={modalLabelClass}>
+                      {t("admin.modals.editDevice.paymentMethod")}
+                    </label>
+                    <select
+                      id="odeme_sekli"
+                      value={odemeSekli}
+                      onChange={(e) =>
+                        setOdemeSekli(
+                          e.target.value as "nakit" | "kart" | "veresiye" | "beklemede"
+                        )
+                      }
+                      disabled={loading}
+                      className={`mt-1.5 ${modalInputClass}`}
+                    >
+                      <option value="nakit">{t("admin.modals.editDevice.payCash")}</option>
+                      <option value="kart">{t("admin.modals.editDevice.payCard")}</option>
+                      <option value="veresiye">{t("admin.modals.editDevice.payCredit")}</option>
+                      <option value="beklemede">{t("admin.modals.editDevice.payLater")}</option>
+                    </select>
+                    <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      {t("admin.modals.editDevice.paymentHint")}
+                    </p>
+                  </div>
                 )}
               </div>
               <div>

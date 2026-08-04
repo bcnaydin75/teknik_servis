@@ -122,7 +122,8 @@ export async function handlePos(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    if (payable > 0) {
+    // Nakit/kart → kasa geliri. Veresiye yalnızca cari borç (nakit girmemiş).
+    if (payable > 0 && paymentType !== "veresiye") {
       await db.from(Tables.finansIslemleri).insert({
         tenant_id: tenantId,
         type: "income",

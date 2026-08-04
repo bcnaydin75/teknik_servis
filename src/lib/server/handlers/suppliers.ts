@@ -23,6 +23,23 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
       scope
     );
 
+    // Bakiye: tüm işlemler (limit yok)
+    const { data: balanceRows } = await applyTenantFilter(
+      db.from(Tables.tedarikciIslemleri).select("supplier_id, type, amount"),
+      scope
+    );
+
+    const totals = new Map<number, { borc: number; odeme: number }>();
+    for (const t of balanceRows ?? []) {
+      const sid = Number(t.supplier_id);
+      const cur = totals.get(sid) ?? { borc: 0, odeme: 0 };
+      const amount = Number(t.amount ?? 0);
+      if (t.type === "borc") cur.borc += amount;
+      else if (t.type === "odeme") cur.odeme += amount;
+      totals.set(sid, cur);
+    }
+
+    // Son hareketler (UI listesi)
     const { data: txRows } = await applyTenantFilter(
       db
         .from(Tables.tedarikciIslemleri)
@@ -33,13 +50,7 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
     );
 
     const supplierList = (suppliers ?? []).map((s) => {
-      const txs = (txRows ?? []).filter((t) => t.supplier_id === s.id);
-      const borc = txs
-        .filter((t) => t.type === "borc")
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-      const odeme = txs
-        .filter((t) => t.type === "odeme")
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const agg = totals.get(Number(s.id)) ?? { borc: 0, odeme: 0 };
       return {
         id: s.id,
         firma_adi: s.firma_adi,
@@ -48,9 +59,9 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
         adres: s.adres,
         notlar: s.notlar,
         created_at: s.created_at,
-        toplam_borc: borc,
-        toplam_odeme: odeme,
-        kalan_borc: borc - odeme,
+        toplam_borc: Math.round(agg.borc * 100) / 100,
+        toplam_odeme: Math.round(agg.odeme * 100) / 100,
+        kalan_borc: Math.round((agg.borc - agg.odeme) * 100) / 100,
       };
     });
 

@@ -141,8 +141,27 @@ export async function handleFinance(): Promise<NextResponse> {
   if (!scope.ok) return jsonFail(scope.message, scope.status);
   const db = getSupabaseAdmin();
 
+  // Özet: tüm kayıtlar (limit yok) — type + amount yeterli
+  const { data: sumRows } = await applyTenantFilter(
+    db.from(Tables.finansIslemleri).select("type, amount"),
+    scope
+  );
+
+  let income = 0;
+  let expense = 0;
+  for (const r of sumRows ?? []) {
+    const amount = Number(r.amount ?? 0);
+    if (r.type === "income") income += amount;
+    else if (r.type === "expense") expense += amount;
+  }
+
+  // Liste: son hareketler (UI)
   const { data: rows } = await applyTenantFilter(
-    db.from(Tables.finansIslemleri).select("*").order("created_at", { ascending: false }).limit(200),
+    db
+      .from(Tables.finansIslemleri)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100),
     scope
   );
 
@@ -154,19 +173,12 @@ export async function handleFinance(): Promise<NextResponse> {
     created_at: r.created_at,
   }));
 
-  const income = transactions
-    .filter((t) => t.type === "income")
-    .reduce((s, t) => s + t.amount, 0);
-  const expense = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((s, t) => s + t.amount, 0);
-
   return jsonOk({
     data: {
       summary: {
-        total_income: income,
-        total_expense: expense,
-        net_balance: income - expense,
+        total_income: Math.round(income * 100) / 100,
+        total_expense: Math.round(expense * 100) / 100,
+        net_balance: Math.round((income - expense) * 100) / 100,
       },
       transactions,
     },

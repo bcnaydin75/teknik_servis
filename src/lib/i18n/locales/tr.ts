@@ -347,6 +347,13 @@ export const messages = {
         title: "Cihaz Düzenle",
         status: "Durum",
         deliveryHint: "Teslim edildi olarak işaretlerseniz garanti kaydı oluşturabilirsiniz.",
+        paymentMethod: "Ödeme şekli",
+        payCash: "Nakit (kasaya gelir)",
+        payCard: "Kart (kasaya gelir)",
+        payCredit: "Veresiye (cari borç)",
+        payLater: "Ödenmedi / sonra tahsil",
+        paymentHint:
+          "Nakit/kart → kasa geliri. Veresiye → müşteri cari. Ödenmedi → kasa/cariye yazılmaz.",
         stockParts: "Stoktan Parça Seç",
         stockLoading: "Stok yükleniyor...",
         stockEmpty: "Stokta parça bulunmuyor. Önce Stok Yönetimi'nden parça ekleyin.",

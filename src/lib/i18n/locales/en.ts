@@ -329,6 +329,13 @@ export const messages = {
         title: "Edit Device",
         status: "Status",
         deliveryHint: "If marked as delivered, you can create a warranty record.",
+        paymentMethod: "Payment method",
+        payCash: "Cash (cash register income)",
+        payCard: "Card (cash register income)",
+        payCredit: "On account (customer debt)",
+        payLater: "Unpaid / collect later",
+        paymentHint:
+          "Cash/card → register income. On account → customer ledger. Unpaid → nothing posted.",
         stockParts: "Select Parts from Stock",
         stockLoading: "Loading stock...",
         stockEmpty: "No parts in stock. Add parts in Inventory first.",

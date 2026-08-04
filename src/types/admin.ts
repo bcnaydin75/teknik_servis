@@ -83,6 +83,8 @@ export interface UpdateDevicePayload {
   aciklama?: string;
   imei_no?: string;
   cihaz_sifresi?: string;
+  /** Teslimde: nakit | kart | veresiye | beklemede */
+  odeme_sekli?: "nakit" | "kart" | "veresiye" | "beklemede";
   warranties?: { parca_adi: string; garanti_ay: number }[];
 }
 

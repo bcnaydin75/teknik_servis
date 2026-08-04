@@ -395,17 +395,49 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
 
   if (error) return jsonFail("Güncellenemedi.", 500);
 
+  const payableTotal = Math.max(0, toplam);
   if (
     newStatus === "teslim_edildi" &&
     existing.cihaz_durumu !== "teslim_edildi" &&
-    toplam > 0
+    payableTotal > 0
   ) {
-    await db.from(Tables.finansIslemleri).insert({
-      tenant_id: tenantId,
-      type: "income",
-      amount: toplam,
-      description: `Tamir teslim: ${existing.takip_kodu}`,
-    });
+    const odemeSekli = String(body.odeme_sekli ?? body.payment_type ?? "nakit")
+      .trim()
+      .toLowerCase();
+
+    if (odemeSekli === "nakit" || odemeSekli === "kart") {
+      await db.from(Tables.finansIslemleri).insert({
+        tenant_id: tenantId,
+        type: "income",
+        amount: payableTotal,
+        description: `Tamir teslim (${odemeSekli}): ${existing.takip_kodu}`,
+      });
+    } else if (odemeSekli === "veresiye") {
+      const customerId = Number(existing.customer_id);
+      if (!customerId) {
+        return jsonFail("Veresiye için müşteri kaydı gerekli.", 400);
+      }
+      const { data: cust } = await db
+        .from(Tables.musteriler)
+        .select("cari_bakiye")
+        .eq("id", customerId)
+        .maybeSingle();
+      if (!cust) return jsonFail("Müşteri bulunamadı.", 404);
+
+      await db
+        .from(Tables.musteriler)
+        .update({ cari_bakiye: Number(cust.cari_bakiye) + payableTotal })
+        .eq("id", customerId);
+
+      await db.from(Tables.cariIslemleri).insert({
+        tenant_id: tenantId,
+        customer_id: customerId,
+        type: "borc",
+        amount: payableTotal,
+        description: `Tamir veresiye: ${existing.takip_kodu}`,
+      });
+    }
+    // beklemede / odenmedi / diğer → kasa ve cariye yazılmaz
   }
 
   if (Array.isArray(body.warranties) && body.warranties.length) {
