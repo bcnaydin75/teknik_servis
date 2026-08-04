@@ -62,10 +62,10 @@ export default function AdminSidebar({
 
   const sidebarContent = (
     <>
-      <div className="border-b border-slate-800 px-5 py-4 lg:px-6 lg:py-5">
+      <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800 lg:px-6 lg:py-5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
+            <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ring-1 ring-slate-200 dark:ring-white/10">
               <Image
                 src={ADMIN_BRAND_LOGO}
                 alt={t("nav.brandTitle")}
@@ -75,8 +75,12 @@ export default function AdminSidebar({
               />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{t("nav.brandTitle")}</p>
-              <p className="text-xs text-slate-400">{t("nav.brandSubtitle")}</p>
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {t("nav.brandTitle")}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {t("nav.brandSubtitle")}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -85,7 +89,7 @@ export default function AdminSidebar({
               <button
                 type="button"
                 onClick={onMobileClose}
-                className="flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-800 hover:text-white lg:hidden"
+                className="flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white lg:hidden"
                 aria-label={t("nav.closeMenu")}
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,7 +112,7 @@ export default function AdminSidebar({
               className={`flex min-h-[44px] touch-manipulation items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 active
                   ? "bg-blue-600 text-white"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white active:bg-slate-700"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white dark:active:bg-slate-700"
               }`}
             >
               <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,11 +124,11 @@ export default function AdminSidebar({
         })}
       </nav>
 
-      <div className="space-y-1 border-t border-slate-800 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:pb-4">
+      <div className="space-y-1 border-t border-slate-200 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-slate-800 lg:pb-4">
         <Link
           href="/"
           onClick={handleNavClick}
-          className="flex min-h-[44px] touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-white"
+          className="flex min-h-[44px] touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -134,7 +138,7 @@ export default function AdminSidebar({
         <button
           type="button"
           onClick={handleLogoutClick}
-          className="flex min-h-[44px] w-full touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-slate-400 transition hover:bg-red-900/30 hover:text-red-300"
+          className="flex min-h-[44px] w-full touch-manipulation items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-slate-500 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-900/30 dark:hover:text-red-300"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
@@ -150,10 +154,13 @@ export default function AdminSidebar({
     </>
   );
 
+  const asideSurface =
+    "flex-col border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900";
+
   return (
     <>
       {/* Masaüstü sidebar */}
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900 lg:flex">
+      <aside className={`hidden w-64 shrink-0 border-r lg:flex ${asideSurface}`}>
         {sidebarContent}
       </aside>
 
@@ -163,10 +170,12 @@ export default function AdminSidebar({
           <button
             type="button"
             aria-label={t("nav.closeMenu")}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm dark:bg-black/60"
             onClick={onMobileClose}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] flex-col bg-slate-900 pt-[env(safe-area-inset-top,0px)] shadow-2xl animate-in slide-in-from-left duration-200">
+          <aside
+            className={`absolute inset-y-0 left-0 flex w-[min(20rem,88vw)] pt-[env(safe-area-inset-top,0px)] shadow-2xl animate-in slide-in-from-left duration-200 ${asideSurface}`}
+          >
             {sidebarContent}
           </aside>
         </div>
