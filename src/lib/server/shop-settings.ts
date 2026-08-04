@@ -16,6 +16,7 @@ export interface ShopSettingsRow {
   logo_url: string | null;
   default_locale: string;
   ucret_detayi_goster: boolean;
+  fis_yazdir_aktif: boolean;
   takip_oneki: string | null;
 }
 
@@ -77,6 +78,7 @@ export async function getShopSettingsForTenant(
     logo_url: logoUrl,
     default_locale: normalizeLocale(row?.default_locale),
     ucret_detayi_goster: row?.ucret_detayi_goster !== false,
+    fis_yazdir_aktif: row?.fis_yazdir_aktif !== false,
     takip_oneki: row?.takip_oneki ?? null,
   };
 }

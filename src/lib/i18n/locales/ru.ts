@@ -273,6 +273,11 @@ export const messages = {
           "Если скрыто, клиент видит только заменённые детали; цены не отображаются.",
         showCostDetailOn: "Показывать",
         showCostDetailOff: "Скрыть (только детали)",
+        saveAndPrint: "Сохранить и печать квитанции",
+        saveAndPrintHint:
+          "Если включено, после сохранения откроется экран печати; если выключено — только сохранение.",
+        saveAndPrintOn: "Вкл.",
+        saveAndPrintOff: "Выкл. (только сохранить)",
       },
       personel: {
         newStaff: "Новый сотрудник",
@@ -321,6 +326,7 @@ export const messages = {
       addDevice: {
         title: "Добавить устройство",
         subtitle: "После сохранения откроется экран печати квитанции",
+        subtitleSaveOnly: "Создаётся запись устройства",
         customerName: "Полное имя клиента *",
         phone: "Телефон",
         email: "Email",
@@ -332,6 +338,7 @@ export const messages = {
         devicePasswordPlaceholder: "Код блокировки экрана",
         faultNote: "Неисправность / примечание",
         saveAndPrint: "Сохранить и печать квитанции",
+        saveOnly: "Сохранить",
         addFailed: "Не удалось добавить запись.",
       },
       editDevice: {

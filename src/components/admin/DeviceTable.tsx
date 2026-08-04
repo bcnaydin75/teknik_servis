@@ -16,6 +16,7 @@ type DeviceTableProps =
       onRestore?: never;
       emptyMessage?: string;
       showCosts?: boolean;
+      showPrintReceipt?: boolean;
     }
   | {
       devices: DeviceListItem[];
@@ -26,6 +27,7 @@ type DeviceTableProps =
       onArchive?: never;
       emptyMessage?: string;
       showCosts?: boolean;
+      showPrintReceipt?: boolean;
     };
 
 function DeviceActions(props: DeviceTableProps & { device: DeviceListItem }) {
@@ -77,7 +79,7 @@ function DeviceActions(props: DeviceTableProps & { device: DeviceListItem }) {
 
 function DeviceMobileCards(props: DeviceTableProps) {
   const { t, locale } = useTranslation();
-  const { devices, showCosts = true } = props;
+  const { devices, showCosts = true, showPrintReceipt = true } = props;
   const isArchived = props.variant === "archived";
 
   return (
@@ -132,7 +134,7 @@ function DeviceMobileCards(props: DeviceTableProps) {
             {t("admin.deviceTable.updated")}: {formatDate(device.guncelleme_tarihi, locale, { day: "numeric", month: "short", year: "numeric" })}
           </p>
 
-          {!isArchived && (
+          {!isArchived && showPrintReceipt && (
             <Link
               href={`/admin/receipt/${encodeURIComponent(device.takip_kodu)}`}
               target="_blank"
@@ -153,7 +155,7 @@ function DeviceMobileCards(props: DeviceTableProps) {
 
 export default function DeviceTable(props: DeviceTableProps) {
   const { t, locale } = useTranslation();
-  const { devices, emptyMessage, showCosts = true } = props;
+  const { devices, emptyMessage, showCosts = true, showPrintReceipt = true } = props;
   const isArchived = props.variant === "archived";
   const defaultEmpty = t("admin.deviceTable.empty");
 
@@ -197,7 +199,7 @@ export default function DeviceTable(props: DeviceTableProps) {
                     <span className="font-mono font-semibold text-slate-900 dark:text-white">
                       {device.takip_kodu}
                     </span>
-                    {!isArchived && (
+                    {!isArchived && showPrintReceipt && (
                       <Link
                         href={`/admin/receipt/${encodeURIComponent(device.takip_kodu)}`}
                         target="_blank"

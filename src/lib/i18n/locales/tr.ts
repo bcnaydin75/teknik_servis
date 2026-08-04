@@ -279,6 +279,11 @@ export const messages = {
           "Gizlenirse müşteri yalnızca değişen parçaları görür; fiyat bilgisi gösterilmez.",
         showCostDetailOn: "Göster",
         showCostDetailOff: "Gizle (sadece parçalar)",
+        saveAndPrint: "Kaydet ve fiş yazdır",
+        saveAndPrintHint:
+          "Açıksa yeni cihaz kaydından sonra fiş ekranı açılır; kapalıysa sadece kaydedilir ve fiş yazdırma gösterilmez.",
+        saveAndPrintOn: "Açık",
+        saveAndPrintOff: "Kapalı (sadece kaydet)",
       },
       personel: {
         newStaff: "Yeni Personel",
@@ -340,6 +345,7 @@ export const messages = {
       addDevice: {
         title: "Yeni Cihaz Ekle",
         subtitle: "Kayıt sonrası fiş yazdırma ekranı açılır",
+        subtitleSaveOnly: "Cihaz kaydı oluşturulur",
         customerName: "Müşteri Adı Soyadı *",
         phone: "Telefon",
         email: "E-posta",
@@ -351,6 +357,7 @@ export const messages = {
         devicePasswordPlaceholder: "Ekran kilidi şifresi",
         faultNote: "Arıza / Not",
         saveAndPrint: "Kaydet & Fiş Yazdır",
+        saveOnly: "Kaydet",
         addFailed: "Kayıt eklenemedi.",
       },
       editDevice: {

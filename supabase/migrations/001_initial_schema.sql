@@ -34,6 +34,7 @@ CREATE TABLE dukkan_ayarlari (
   logo_path VARCHAR(500),
   default_locale VARCHAR(5) NOT NULL DEFAULT 'tr',
   ucret_detayi_goster BOOLEAN NOT NULL DEFAULT TRUE,
+  fis_yazdir_aktif BOOLEAN NOT NULL DEFAULT TRUE,
   takip_oneki VARCHAR(6) UNIQUE,
   guncelleme_tarihi TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

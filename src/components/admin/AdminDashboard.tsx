@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { checkAuth } from "@/lib/auth-api";
 import { archiveDevice, fetchDashboardStats, fetchDevices } from "@/lib/admin-api";
+import { fetchShopSettings } from "@/lib/settings-api";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { runAfterEffect } from "@/lib/run-after-effect";
 import type { DashboardStats, DeviceListItem } from "@/types/admin";
@@ -31,6 +32,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [showPosStats, setShowPosStats] = useState(true);
   const [canSeeCosts, setCanSeeCosts] = useState(true);
+  const [printReceiptEnabled, setPrintReceiptEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -46,15 +48,19 @@ export default function AdminDashboard() {
     setLoading(true);
 
     try {
-      const [authRes, devicesRes, statsRes] = await Promise.all([
+      const [authRes, devicesRes, statsRes, shopRes] = await Promise.all([
         checkAuth(),
         fetchDevices({ q: q || undefined }),
         fetchDashboardStats(),
+        fetchShopSettings(),
       ]);
 
       const perms = authRes.data?.permissions as Permissions | undefined;
       setShowPosStats(Boolean(perms?.pos || perms?.see_finance));
       setCanSeeCosts(Boolean(perms?.see_costs));
+      if (shopRes.success && shopRes.data) {
+        setPrintReceiptEnabled(shopRes.data.fis_yazdir_aktif !== false);
+      }
 
       if (!devicesRes.success || !devicesRes.data) {
         setError(devicesRes.message ?? t("admin.dashboard.loadFailed"));
@@ -95,7 +101,9 @@ export default function AdminDashboard() {
   function handleAddSuccess(takipKodu: string) {
     setToast(t("admin.dashboard.deviceAdded", { code: takipKodu }));
     loadData(debouncedQuery);
-    window.open(`/admin/receipt/${encodeURIComponent(takipKodu)}`, "_blank");
+    if (printReceiptEnabled) {
+      window.open(`/admin/receipt/${encodeURIComponent(takipKodu)}`, "_blank");
+    }
   }
 
   function handleEditSuccess(message?: string) {
@@ -207,6 +215,7 @@ export default function AdminDashboard() {
                 onEdit={setEditDevice}
                 onArchive={setArchiveTarget}
                 showCosts={canSeeCosts}
+                showPrintReceipt={printReceiptEnabled}
               />
             )}
           </section>
@@ -217,6 +226,7 @@ export default function AdminDashboard() {
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSuccess={handleAddSuccess}
+        printReceiptEnabled={printReceiptEnabled}
       />
 
       <EditDeviceModal

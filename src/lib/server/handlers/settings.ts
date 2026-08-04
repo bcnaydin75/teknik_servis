@@ -73,6 +73,9 @@ export async function handleSettings(request: NextRequest): Promise<NextResponse
     if (body.ucret_detayi_goster !== undefined) {
       update.ucret_detayi_goster = Boolean(body.ucret_detayi_goster);
     }
+    if (body.fis_yazdir_aktif !== undefined) {
+      update.fis_yazdir_aktif = Boolean(body.fis_yazdir_aktif);
+    }
 
     await db
       .from(Tables.dukkanAyarlari)

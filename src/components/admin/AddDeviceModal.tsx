@@ -19,9 +19,16 @@ interface AddDeviceModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (takipKodu: string) => void;
+  /** Ayarlar → Kaydet ve fiş yazdır */
+  printReceiptEnabled?: boolean;
 }
 
-export default function AddDeviceModal({ open, onClose, onSuccess }: AddDeviceModalProps) {
+export default function AddDeviceModal({
+  open,
+  onClose,
+  onSuccess,
+  printReceiptEnabled = true,
+}: AddDeviceModalProps) {
   const { t } = useTranslation();
   const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +114,9 @@ export default function AddDeviceModal({ open, onClose, onSuccess }: AddDeviceMo
               {t("admin.modals.addDevice.title")}
             </h2>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {t("admin.modals.addDevice.subtitle")}
+              {printReceiptEnabled
+                ? t("admin.modals.addDevice.subtitle")
+                : t("admin.modals.addDevice.subtitleSaveOnly")}
             </p>
           </div>
           <ModalCloseButton onClick={handleClose} label={t("common.close")} />
@@ -272,7 +281,11 @@ export default function AddDeviceModal({ open, onClose, onSuccess }: AddDeviceMo
               {t("common.cancel")}
             </button>
             <button type="submit" disabled={loading} className={modalPrimaryBtnClass}>
-              {loading ? t("common.saving") : t("admin.modals.addDevice.saveAndPrint")}
+              {loading
+                ? t("common.saving")
+                : printReceiptEnabled
+                  ? t("admin.modals.addDevice.saveAndPrint")
+                  : t("admin.modals.addDevice.saveOnly")}
             </button>
           </div>
         </form>

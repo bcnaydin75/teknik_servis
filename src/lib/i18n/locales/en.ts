@@ -274,6 +274,11 @@ export const messages = {
           "When hidden, customers only see replaced parts; prices are not shown.",
         showCostDetailOn: "Show",
         showCostDetailOff: "Hide (parts only)",
+        saveAndPrint: "Save and print receipt",
+        saveAndPrintHint:
+          "When on, the receipt screen opens after adding a device; when off, only save — no receipt printing.",
+        saveAndPrintOn: "On",
+        saveAndPrintOff: "Off (save only)",
       },
       personel: {
         newStaff: "New Staff Member",
@@ -322,6 +327,7 @@ export const messages = {
       addDevice: {
         title: "Add New Device",
         subtitle: "Receipt print screen opens after saving",
+        subtitleSaveOnly: "Creates a device record",
         customerName: "Customer Full Name *",
         phone: "Phone",
         email: "Email",
@@ -333,6 +339,7 @@ export const messages = {
         devicePasswordPlaceholder: "Screen lock passcode",
         faultNote: "Issue / Note",
         saveAndPrint: "Save & Print Receipt",
+        saveOnly: "Save",
         addFailed: "Could not add record.",
       },
       editDevice: {

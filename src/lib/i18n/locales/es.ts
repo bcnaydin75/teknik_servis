@@ -273,6 +273,11 @@ export const messages = {
           "Si se oculta, el cliente solo verá las piezas cambiadas; no se muestran precios.",
         showCostDetailOn: "Mostrar",
         showCostDetailOff: "Ocultar (solo piezas)",
+        saveAndPrint: "Guardar e imprimir ticket",
+        saveAndPrintHint:
+          "Si está activo, tras registrar un dispositivo se abre la pantalla del ticket; si no, solo se guarda.",
+        saveAndPrintOn: "Activo",
+        saveAndPrintOff: "Inactivo (solo guardar)",
       },
       personel: {
         newStaff: "Nuevo empleado",
@@ -321,6 +326,7 @@ export const messages = {
       addDevice: {
         title: "Añadir dispositivo",
         subtitle: "Tras guardar se abre la pantalla de impresión del ticket",
+        subtitleSaveOnly: "Se crea el registro del dispositivo",
         customerName: "Nombre completo del cliente *",
         phone: "Teléfono",
         email: "Correo electrónico",
@@ -332,6 +338,7 @@ export const messages = {
         devicePasswordPlaceholder: "Contraseña de bloqueo de pantalla",
         faultNote: "Avería / Nota",
         saveAndPrint: "Guardar e imprimir ticket",
+        saveOnly: "Guardar",
         addFailed: "No se pudo añadir el registro.",
       },
       editDevice: {

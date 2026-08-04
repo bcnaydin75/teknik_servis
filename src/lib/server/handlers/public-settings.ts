@@ -29,6 +29,7 @@ export async function handlePublicSettings(
           logo_url: null,
           default_locale: "tr",
           ucret_detayi_goster: true,
+          fis_yazdir_aktif: true,
         },
       });
     }

@@ -273,6 +273,11 @@ export const messages = {
           "Se nascosto, il cliente vede solo i pezzi sostituiti; i prezzi non vengono mostrati.",
         showCostDetailOn: "Mostra",
         showCostDetailOff: "Nascondi (solo pezzi)",
+        saveAndPrint: "Salva e stampa scontrino",
+        saveAndPrintHint:
+          "Se attivo, dopo il salvataggio si apre la schermata dello scontrino; se disattivo, salva soltanto.",
+        saveAndPrintOn: "Attivo",
+        saveAndPrintOff: "Disattivo (solo salva)",
       },
       personel: {
         newStaff: "Nuovo dipendente",
@@ -321,6 +326,7 @@ export const messages = {
       addDevice: {
         title: "Aggiungi dispositivo",
         subtitle: "Dopo il salvataggio si apre la schermata di stampa scontrino",
+        subtitleSaveOnly: "Crea una registrazione dispositivo",
         customerName: "Nome e cognome cliente *",
         phone: "Telefono",
         email: "Email",
@@ -332,6 +338,7 @@ export const messages = {
         devicePasswordPlaceholder: "Codice di sblocco schermo",
         faultNote: "Guasto / Nota",
         saveAndPrint: "Salva e stampa scontrino",
+        saveOnly: "Salva",
         addFailed: "Impossibile aggiungere la registrazione.",
       },
       editDevice: {
