@@ -1,11 +1,21 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { fetchInventory, fetchSuppliers, saveInventoryItem } from "@/lib/admin-api";
 import type { InventoryItem, SupplierItem } from "@/types/admin";
 import AdminShell from "./AdminShell";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency } from "@/lib/i18n/format";
+import {
+  ModalCloseButton,
+  modalBackdropClass,
+  modalInputClass,
+  modalLabelClass,
+  modalPanelClass,
+  modalPrimaryBtnClass,
+  modalSecondaryBtnClass,
+  useModalHotkeys,
+} from "./modal-ui";
 
 export default function InventoryPage() {
   const { t, locale } = useTranslation();
@@ -17,6 +27,20 @@ export default function InventoryPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
   const [saving, setSaving] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const closeForm = useCallback(() => {
+    if (saving) return;
+    setShowForm(false);
+    setEditing(null);
+  }, [saving]);
+
+  useModalHotkeys({
+    open: showForm,
+    onClose: closeForm,
+    formRef,
+    disabled: saving,
+  });
 
   const showCosts = items.length === 0 || items.some((i) => i.buy_price !== undefined);
 
@@ -202,37 +226,38 @@ export default function InventoryPage() {
           <button
             type="button"
             aria-label={t("common.close")}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => {
-              setShowForm(false);
-              setEditing(null);
-            }}
+            className={modalBackdropClass}
+            onClick={closeForm}
           />
 
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900">
-              {editing ? t("admin.inventory.editStock") : t("admin.inventory.addStockModal")}
-            </h2>
+          <div className={modalPanelClass}>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                {editing ? t("admin.inventory.editStock") : t("admin.inventory.addStockModal")}
+              </h2>
+              <ModalCloseButton onClick={closeForm} label={t("common.close")} />
+            </div>
 
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="part_name" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="part_name" className={modalLabelClass}>
                   {t("admin.inventory.partName")} *
                 </label>
                 <input
                   id="part_name"
                   name="part_name"
                   required
+                  placeholder={t("admin.inventory.partNamePlaceholder")}
                   defaultValue={editing?.part_name ?? ""}
                   disabled={saving}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                  className={`mt-1.5 ${modalInputClass}`}
                 />
               </div>
 
               <div className={`grid gap-4 ${showCosts ? "grid-cols-2" : "grid-cols-1"}`}>
                 {showCosts && (
                 <div>
-                  <label htmlFor="buy_price" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="buy_price" className={modalLabelClass}>
                     {t("admin.inventory.costCurrency")}
                   </label>
                   <input
@@ -243,13 +268,13 @@ export default function InventoryPage() {
                     step="0.01"
                     defaultValue={editing?.buy_price ?? 0}
                     disabled={saving}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                    className={`mt-1.5 ${modalInputClass}`}
                   />
                 </div>
                 )}
                 {!showCosts && <input type="hidden" name="buy_price" value={editing?.buy_price ?? 0} />}
                 <div>
-                  <label htmlFor="sell_price" className="block text-sm font-medium text-slate-700">
+                  <label htmlFor="sell_price" className={modalLabelClass}>
                     {t("admin.inventory.sellCurrency")}
                   </label>
                   <input
@@ -260,30 +285,30 @@ export default function InventoryPage() {
                     step="0.01"
                     defaultValue={editing?.sell_price ?? 0}
                     disabled={saving}
-                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                    className={`mt-1.5 ${modalInputClass}`}
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="supplier_id" className="block text-sm font-medium text-slate-700">{t("admin.inventory.supplier")}</label>
+                <label htmlFor="supplier_id" className={modalLabelClass}>{t("admin.inventory.supplier")}</label>
                 <select
                   id="supplier_id"
                   name="supplier_id"
                   defaultValue={editing?.supplier_id ?? ""}
                   disabled={saving}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5"
+                  className={`mt-1.5 ${modalInputClass}`}
                 >
                   <option value="">{t("common.notSelected")}</option>
                   {suppliers.map((s) => (
                     <option key={s.id} value={s.id}>{s.firma_adi}</option>
                   ))}
                 </select>
-                {!editing && <p className="mt-1 text-xs text-slate-400">{t("admin.inventory.supplierHint")}</p>}
+                {!editing && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{t("admin.inventory.supplierHint")}</p>}
               </div>
 
               <div>
-                <label htmlFor="stock_quantity" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="stock_quantity" className={modalLabelClass}>
                   {t("admin.inventory.quantity")}
                 </label>
                 <input
@@ -293,26 +318,23 @@ export default function InventoryPage() {
                   min="0"
                   defaultValue={editing?.stock_quantity ?? 0}
                   disabled={saving}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                  className={`mt-1.5 ${modalInputClass}`}
                 />
               </div>
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditing(null);
-                  }}
+                  onClick={closeForm}
                   disabled={saving}
-                  className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  className={modalSecondaryBtnClass}
                 >
                   {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                  className={modalPrimaryBtnClass}
                 >
                   {saving ? t("common.saving") : t("common.save")}
                 </button>

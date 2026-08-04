@@ -1,26 +1,22 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { fetchSuppliers, saveSupplier } from "@/lib/admin-api";
 import type { SupplierItem, SupplierTransaction } from "@/types/admin";
 import AdminShell from "./AdminShell";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
-
-function ModalCloseButton({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-    >
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    </button>
-  );
-}
+import {
+  ModalCloseButton,
+  modalBackdropClass,
+  modalCardClass,
+  modalInputClass,
+  modalPanelClass,
+  modalPrimaryBtnClass,
+  modalSecondaryBtnClass,
+  modalTitleClass,
+  useModalHotkeys,
+} from "./modal-ui";
 
 export default function SuppliersPage() {
   const { t, locale } = useTranslation();
@@ -30,6 +26,22 @@ export default function SuppliersPage() {
   const [showForm, setShowForm] = useState(false);
   const [showTxForm, setShowTxForm] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const supplierFormRef = useRef<HTMLFormElement>(null);
+  const txFormRef = useRef<HTMLFormElement>(null);
+
+  const closeSupplierForm = useCallback(() => setShowForm(false), []);
+  const closeTxForm = useCallback(() => setShowTxForm(false), []);
+
+  useModalHotkeys({
+    open: showForm,
+    onClose: closeSupplierForm,
+    formRef: supplierFormRef,
+  });
+  useModalHotkeys({
+    open: showTxForm,
+    onClose: closeTxForm,
+    formRef: txFormRef,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,16 +68,18 @@ export default function SuppliersPage() {
     const form = new FormData(e.currentTarget);
     const res = await saveSupplier({
       action: "add_supplier",
-      firma_adi: String(form.get("firma_adi")),
-      telefon: String(form.get("telefon") || "") || undefined,
-      email: String(form.get("email") || "") || undefined,
-      adres: String(form.get("adres") || "") || undefined,
+      firma_adi: String(form.get("firma_adi") ?? "").trim(),
+      telefon: String(form.get("telefon") ?? "").trim() || undefined,
+      email: String(form.get("email") ?? "").trim() || undefined,
+      adres: String(form.get("adres") ?? "").trim() || undefined,
     });
     if (res.success) {
-      setToast(t("admin.suppliers.added"));
       setShowForm(false);
+      setToast(t("admin.suppliers.added"));
       load();
-    } else setToast(res.message ?? t("common.error"));
+    } else {
+      setToast(res.message ?? t("common.error"));
+    }
   }
 
   async function handleAddTx(e: FormEvent<HTMLFormElement>) {
@@ -73,16 +87,18 @@ export default function SuppliersPage() {
     const form = new FormData(e.currentTarget);
     const res = await saveSupplier({
       action: "add_transaction",
-      supplier_id: parseInt(String(form.get("supplier_id")), 10),
+      supplier_id: Number(form.get("supplier_id")),
       type: String(form.get("type")),
-      amount: parseFloat(String(form.get("amount"))),
-      description: String(form.get("description") || "") || undefined,
+      amount: Number(form.get("amount")),
+      description: String(form.get("description") ?? "").trim() || undefined,
     });
     if (res.success) {
-      setToast(t("admin.suppliers.txRecorded"));
       setShowTxForm(false);
+      setToast(t("admin.suppliers.txRecorded"));
       load();
-    } else setToast(res.message ?? t("common.error"));
+    } else {
+      setToast(res.message ?? t("common.error"));
+    }
   }
 
   const totalDebt = suppliers.reduce((s, x) => s + x.kalan_borc, 0);
@@ -97,22 +113,22 @@ export default function SuppliersPage() {
             <button
               type="button"
               onClick={() => setShowTxForm(true)}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               {t("admin.suppliers.addTransaction")}
             </button>
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
             >
               {t("admin.suppliers.addSupplier")}
             </button>
           </div>
         }
       >
-        <div className="mb-6 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 p-6 text-white shadow-lg">
-          <p className="text-sm text-violet-200">{t("admin.suppliers.totalRemainingDebt")}</p>
+        <div className="mb-6 rounded-2xl bg-gradient-to-r from-violet-700 to-indigo-700 p-6 text-white shadow-lg dark:from-violet-900 dark:to-indigo-900">
+          <p className="text-sm text-violet-200/90">{t("admin.suppliers.totalRemainingDebt")}</p>
           <p className="mt-1 text-3xl font-bold">{formatCurrency(totalDebt, locale)}</p>
         </div>
 
@@ -120,27 +136,29 @@ export default function SuppliersPage() {
           <p className="text-center text-slate-400">{t("common.loading")}</p>
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 px-6 py-4">
-                <h2 className="font-bold text-slate-900">{t("admin.suppliers.supplierList")}</h2>
+            <div className={modalCardClass}>
+              <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-700">
+                <h2 className="font-bold text-slate-900 dark:text-slate-100">{t("admin.suppliers.supplierList")}</h2>
               </div>
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-slate-50 dark:divide-slate-800">
                 {suppliers.map((s) => (
                   <div key={s.id} className="px-6 py-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-semibold text-slate-900">{s.firma_adi}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">{s.firma_adi}</p>
                         {s.telefon && <p className="text-xs text-slate-400">{s.telefon}</p>}
                       </div>
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-bold ${
-                          s.kalan_borc > 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                          s.kalan_borc > 0
+                            ? "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300"
+                            : "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300"
                         }`}
                       >
                         {formatCurrency(s.kalan_borc, locale)}
                       </span>
                     </div>
-                    <div className="mt-2 flex gap-4 text-xs text-slate-500">
+                    <div className="mt-2 flex gap-4 text-xs text-slate-500 dark:text-slate-400">
                       <span>{t("admin.suppliers.debtShort")} {formatCurrency(s.toplam_borc, locale)}</span>
                       <span>{t("admin.suppliers.paymentShort")} {formatCurrency(s.toplam_odeme, locale)}</span>
                     </div>
@@ -149,20 +167,20 @@ export default function SuppliersPage() {
               </div>
             </div>
 
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="border-b border-slate-100 px-6 py-4">
-                <h2 className="font-bold text-slate-900">{t("admin.suppliers.recentTransactions")}</h2>
+            <div className={modalCardClass}>
+              <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-700">
+                <h2 className="font-bold text-slate-900 dark:text-slate-100">{t("admin.suppliers.recentTransactions")}</h2>
               </div>
-              <div className="max-h-96 divide-y divide-slate-50 overflow-y-auto">
+              <div className="max-h-96 divide-y divide-slate-50 overflow-y-auto dark:divide-slate-800">
                 {transactions.map((tx) => (
                   <div key={tx.id} className="flex items-center justify-between px-6 py-3 text-sm">
                     <div>
-                      <p className="font-medium text-slate-800">{tx.firma_adi}</p>
+                      <p className="font-medium text-slate-800 dark:text-slate-200">{tx.firma_adi}</p>
                       <p className="text-xs text-slate-400">
                         {tx.description ?? t("common.dash")} · {formatDateTime(tx.created_at, locale)}
                       </p>
                     </div>
-                    <span className={`font-bold ${tx.type === "borc" ? "text-red-500" : "text-emerald-600"}`}>
+                    <span className={`font-bold ${tx.type === "borc" ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
                       {tx.type === "borc" ? "+" : "−"}
                       {formatCurrency(tx.amount, locale)}
                     </span>
@@ -182,52 +200,46 @@ export default function SuppliersPage() {
           <button
             type="button"
             aria-label={t("common.close")}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setShowForm(false)}
+            className={modalBackdropClass}
+            onClick={closeSupplierForm}
           />
           <form
+            ref={supplierFormRef}
             onSubmit={handleAddSupplier}
-            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            className={modalPanelClass}
           >
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">{t("admin.suppliers.newSupplier")}</h3>
-              <ModalCloseButton onClick={() => setShowForm(false)} label={t("common.close")} />
+              <h3 className={modalTitleClass}>{t("admin.suppliers.newSupplier")}</h3>
+              <ModalCloseButton onClick={closeSupplierForm} label={t("common.close")} />
             </div>
             <div className="space-y-3">
               <input
                 name="firma_adi"
                 required
                 placeholder={t("admin.suppliers.companyNameRequired")}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
+                className={modalInputClass}
               />
               <input
                 name="telefon"
                 placeholder={t("admin.suppliers.phone")}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
+                className={modalInputClass}
               />
               <input
                 name="email"
                 placeholder={t("admin.suppliers.email")}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
+                className={modalInputClass}
               />
               <input
                 name="adres"
                 placeholder={t("admin.suppliers.address")}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
+                className={modalInputClass}
               />
             </div>
             <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
+              <button type="button" onClick={closeSupplierForm} className={modalSecondaryBtnClass}>
                 {t("common.cancel")}
               </button>
-              <button
-                type="submit"
-                className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-              >
+              <button type="submit" className={modalPrimaryBtnClass}>
                 {t("common.save")}
               </button>
             </div>
@@ -240,23 +252,20 @@ export default function SuppliersPage() {
           <button
             type="button"
             aria-label={t("common.close")}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setShowTxForm(false)}
+            className={modalBackdropClass}
+            onClick={closeTxForm}
           />
           <form
+            ref={txFormRef}
             onSubmit={handleAddTx}
-            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            className={modalPanelClass}
           >
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">{t("admin.suppliers.addTransactionTitle")}</h3>
-              <ModalCloseButton onClick={() => setShowTxForm(false)} label={t("common.close")} />
+              <h3 className={modalTitleClass}>{t("admin.suppliers.addTransactionTitle")}</h3>
+              <ModalCloseButton onClick={closeTxForm} label={t("common.close")} />
             </div>
             <div className="space-y-3">
-              <select
-                name="supplier_id"
-                required
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
-              >
+              <select name="supplier_id" required className={modalInputClass}>
                 <option value="">{t("admin.suppliers.selectSupplier")}</option>
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -264,11 +273,7 @@ export default function SuppliersPage() {
                   </option>
                 ))}
               </select>
-              <select
-                name="type"
-                required
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
-              >
+              <select name="type" required className={modalInputClass}>
                 <option value="borc">{t("admin.suppliers.debtPurchase")}</option>
                 <option value="odeme">{t("admin.suppliers.paymentType")}</option>
               </select>
@@ -279,26 +284,19 @@ export default function SuppliersPage() {
                 step="0.01"
                 required
                 placeholder={t("admin.suppliers.amount")}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
+                className={modalInputClass}
               />
               <input
                 name="description"
                 placeholder={t("admin.suppliers.description")}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white"
+                className={modalInputClass}
               />
             </div>
             <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowTxForm(false)}
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-              >
+              <button type="button" onClick={closeTxForm} className={modalSecondaryBtnClass}>
                 {t("common.cancel")}
               </button>
-              <button
-                type="submit"
-                className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-              >
+              <button type="submit" className={modalPrimaryBtnClass}>
                 {t("common.save")}
               </button>
             </div>
@@ -307,7 +305,7 @@ export default function SuppliersPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-xl">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-xl dark:bg-slate-800 dark:ring-1 dark:ring-slate-600">
           {toast}
         </div>
       )}

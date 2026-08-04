@@ -250,11 +250,25 @@ export default function SettingsPage() {
         <form onSubmit={handleShopSave} className="max-w-2xl space-y-5 rounded-2xl bg-white p-6 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
           <div className="flex items-center gap-4">
             {shop.logo_url ? (
-              <img src={shop.logo_url} alt={t("admin.settings.firma.logo")} className="h-16 w-16 rounded-xl object-contain ring-1 ring-slate-200" />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700">{t("admin.settings.firma.logo")}</div>
-            )}
-            <label className="cursor-pointer rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
+              <img
+                src={shop.logo_url}
+                alt={t("admin.settings.firma.logo")}
+                className="h-16 w-16 rounded-xl object-contain ring-1 ring-slate-200 dark:ring-slate-600 dark:bg-slate-900"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                  const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                  if (fallback) fallback.classList.remove("hidden");
+                }}
+              />
+            ) : null}
+            <div
+              className={`flex h-16 w-16 items-center justify-center rounded-xl bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-300 ${
+                shop.logo_url ? "hidden" : ""
+              }`}
+            >
+              {t("admin.settings.firma.logo")}
+            </div>
+            <label className="cursor-pointer rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600">
               {t("admin.settings.firma.uploadLogo")}
               <input type="file" accept="image/*" className="hidden" onChange={handleLogo} />
             </label>
@@ -268,7 +282,7 @@ export default function SettingsPage() {
               <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 {t("admin.settings.firma.trackingPrefix")}
               </p>
-              <p className="mt-1 font-mono text-lg font-bold tracking-wide text-blue-600 dark:text-blue-400">
+              <p className="mt-1 font-mono text-lg font-bold tracking-wide text-blue-700 dark:text-blue-400">
                 {shop.takip_ornek ?? `${shop.takip_oneki}-??-001`}
               </p>
               <p className="mt-1 text-xs text-slate-500">{t("admin.settings.firma.trackingPrefixHint")}</p>
@@ -299,8 +313,8 @@ export default function SettingsPage() {
                 onClick={() => setShop({ ...shop, ucret_detayi_goster: true })}
                 className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
                   shop.ucret_detayi_goster !== false
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+                    ? "bg-blue-700 text-white dark:bg-blue-800"
+                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-700"
                 }`}
               >
                 {t("admin.settings.firma.showCostDetailOn")}
@@ -310,8 +324,8 @@ export default function SettingsPage() {
                 onClick={() => setShop({ ...shop, ucret_detayi_goster: false })}
                 className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
                   shop.ucret_detayi_goster === false
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200"
+                    ? "bg-blue-700 text-white dark:bg-blue-800"
+                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-700"
                 }`}
               >
                 {t("admin.settings.firma.showCostDetailOff")}
@@ -319,7 +333,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <p className="text-xs text-slate-500">{t("admin.settings.firma.hint")}</p>
-          <button type="submit" className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">{t("common.save")}</button>
+          <button type="submit" className="rounded-xl bg-blue-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 dark:bg-blue-800 dark:hover:bg-blue-700">{t("common.save")}</button>
         </form>
       ) : tab === "personel" ? (
         <div className="space-y-6">

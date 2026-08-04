@@ -59,8 +59,11 @@ export async function getShopSettingsForTenant(
     if (row.logo_path.startsWith("http")) {
       logoUrl = row.logo_path;
     } else if (options?.includeLogoQuery) {
-      const shop = options.shopSlug ? `&shop=${encodeURIComponent(options.shopSlug)}` : "";
-      logoUrl = `/api/public_settings.php?action=logo${shop}`;
+      const params = new URLSearchParams({ action: "logo", tenant_id: String(tenantId) });
+      if (options.shopSlug) params.set("shop", options.shopSlug);
+      // Cache bust — yükleme sonrası kırık/eski görüntü kalmasın
+      params.set("v", String(Date.now()));
+      logoUrl = `/api/public_settings.php?${params.toString()}`;
     }
   }
 

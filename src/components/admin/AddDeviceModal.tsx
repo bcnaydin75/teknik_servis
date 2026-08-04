@@ -1,10 +1,19 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useRef, useState } from "react";
 import { addDevice, checkCustomer } from "@/lib/admin-api";
 import type { CustomerCheckData } from "@/types/admin";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import CustomerAlert from "./CustomerAlert";
+import {
+  ModalCloseButton,
+  modalBackdropClass,
+  modalInputClass,
+  modalLabelClass,
+  modalPrimaryBtnClass,
+  modalSecondaryBtnClass,
+  useModalHotkeys,
+} from "./modal-ui";
 
 interface AddDeviceModalProps {
   open: boolean;
@@ -14,10 +23,22 @@ interface AddDeviceModalProps {
 
 export default function AddDeviceModal({ open, onClose, onSuccess }: AddDeviceModalProps) {
   const { t } = useTranslation();
+  const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerCheckData | null>(null);
   const [showDevicePassword, setShowDevicePassword] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (!loading) onClose();
+  }, [loading, onClose]);
+
+  useModalHotkeys({
+    open,
+    onClose: handleClose,
+    formRef,
+    disabled: loading,
+  });
 
   if (!open) return null;
 
@@ -72,72 +93,113 @@ export default function AddDeviceModal({ open, onClose, onSuccess }: AddDeviceMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <button type="button" aria-label={t("common.close")} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <button
+        type="button"
+        aria-label={t("common.close")}
+        className={modalBackdropClass}
+        onClick={handleClose}
+      />
 
-      <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-6 dark:bg-slate-900">
-        <div className="mb-6 flex items-center justify-between">
+      <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-2xl sm:p-6 dark:bg-slate-900 dark:ring-1 dark:ring-slate-700/80">
+        <div className="mb-6 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t("admin.modals.addDevice.title")}</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t("admin.modals.addDevice.subtitle")}</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              {t("admin.modals.addDevice.title")}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              {t("admin.modals.addDevice.subtitle")}
+            </p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <ModalCloseButton onClick={handleClose} label={t("common.close")} />
         </div>
 
         <CustomerAlert data={customerInfo} />
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label htmlFor="ad_soyad" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.customerName")}</label>
+            <label htmlFor="ad_soyad" className={modalLabelClass}>
+              {t("admin.modals.addDevice.customerName")}
+            </label>
             <input
               id="ad_soyad"
               name="ad_soyad"
               required
               disabled={loading}
-              onBlur={(e) => handleCustomerCheck(
-                (document.getElementById("telefon") as HTMLInputElement)?.value ?? "",
-                e.target.value
-              )}
-              className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+              onBlur={(e) =>
+                handleCustomerCheck(
+                  (document.getElementById("telefon") as HTMLInputElement)?.value ?? "",
+                  e.target.value
+                )
+              }
+              className={`mt-1.5 ${modalInputClass}`}
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="telefon" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.phone")}</label>
+              <label htmlFor="telefon" className={modalLabelClass}>
+                {t("admin.modals.addDevice.phone")}
+              </label>
               <input
                 id="telefon"
                 name="telefon"
                 disabled={loading}
                 placeholder={t("admin.settings.firma.phonePlaceholder")}
-                onBlur={(e) => handleCustomerCheck(
-                  e.target.value,
-                  (document.getElementById("ad_soyad") as HTMLInputElement)?.value ?? ""
-                )}
-                className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                onBlur={(e) =>
+                  handleCustomerCheck(
+                    e.target.value,
+                    (document.getElementById("ad_soyad") as HTMLInputElement)?.value ?? ""
+                  )
+                }
+                className={`mt-1.5 ${modalInputClass}`}
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.email")}</label>
-              <input id="email" name="email" type="email" disabled={loading} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20" />
+              <label htmlFor="email" className={modalLabelClass}>
+                {t("admin.modals.addDevice.email")}
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                disabled={loading}
+                className={`mt-1.5 ${modalInputClass}`}
+              />
             </div>
           </div>
 
           <div>
-            <label htmlFor="cihaz_modeli" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.deviceModel")}</label>
-            <input id="cihaz_modeli" name="cihaz_modeli" required disabled={loading} placeholder={t("admin.modals.addDevice.deviceModelPlaceholder")} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20" />
+            <label htmlFor="cihaz_modeli" className={modalLabelClass}>
+              {t("admin.modals.addDevice.deviceModel")}
+            </label>
+            <input
+              id="cihaz_modeli"
+              name="cihaz_modeli"
+              required
+              disabled={loading}
+              placeholder={t("admin.modals.addDevice.deviceModelPlaceholder")}
+              className={`mt-1.5 ${modalInputClass}`}
+            />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="imei_no" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.imei")}</label>
-              <input id="imei_no" name="imei_no" disabled={loading} placeholder={t("admin.modals.addDevice.imeiPlaceholder")} maxLength={20} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20" />
+              <label htmlFor="imei_no" className={modalLabelClass}>
+                {t("admin.modals.addDevice.imei")}
+              </label>
+              <input
+                id="imei_no"
+                name="imei_no"
+                disabled={loading}
+                placeholder={t("admin.modals.addDevice.imeiPlaceholder")}
+                maxLength={20}
+                className={`mt-1.5 font-mono ${modalInputClass}`}
+              />
             </div>
             <div>
-              <label htmlFor="cihaz_sifresi" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.devicePassword")}</label>
+              <label htmlFor="cihaz_sifresi" className={modalLabelClass}>
+                {t("admin.modals.addDevice.devicePassword")}
+              </label>
               <div className="relative mt-1.5">
                 <input
                   id="cihaz_sifresi"
@@ -145,21 +207,36 @@ export default function AddDeviceModal({ open, onClose, onSuccess }: AddDeviceMo
                   type={showDevicePassword ? "text" : "password"}
                   disabled={loading}
                   placeholder={t("admin.modals.addDevice.devicePasswordPlaceholder")}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 pr-11 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                  className={`pr-11 ${modalInputClass}`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowDevicePassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                   aria-label={showDevicePassword ? t("common.hide") : t("common.show")}
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     {showDevicePassword ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                      />
                     ) : (
                       <>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
                       </>
                     )}
                   </svg>
@@ -169,15 +246,34 @@ export default function AddDeviceModal({ open, onClose, onSuccess }: AddDeviceMo
           </div>
 
           <div>
-            <label htmlFor="aciklama" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.faultNote")}</label>
-            <textarea id="aciklama" name="aciklama" rows={3} disabled={loading} className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20" />
+            <label htmlFor="aciklama" className={modalLabelClass}>
+              {t("admin.modals.addDevice.faultNote")}
+            </label>
+            <textarea
+              id="aciklama"
+              name="aciklama"
+              rows={3}
+              disabled={loading}
+              className={`mt-1.5 resize-none ${modalInputClass}`}
+            />
           </div>
 
-          {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+          {error && (
+            <p
+              role="alert"
+              className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
+            >
+              {error}
+            </p>
+          )}
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} disabled={loading} className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">{t("common.cancel")}</button>
-            <button type="submit" disabled={loading} className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">{loading ? t("common.saving") : t("admin.modals.addDevice.saveAndPrint")}</button>
+            <button type="button" onClick={handleClose} disabled={loading} className={modalSecondaryBtnClass}>
+              {t("common.cancel")}
+            </button>
+            <button type="submit" disabled={loading} className={modalPrimaryBtnClass}>
+              {loading ? t("common.saving") : t("admin.modals.addDevice.saveAndPrint")}
+            </button>
           </div>
         </form>
       </div>

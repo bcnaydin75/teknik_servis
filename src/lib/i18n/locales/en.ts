@@ -407,6 +407,7 @@ export const messages = {
       subtitle: "Part stock, cost, and selling prices",
       addStock: "Add New Stock",
       partName: "Part Name",
+      partNamePlaceholder: "e.g. iPhone 15 screen, battery…",
       cost: "Cost",
       sellPrice: "Sell Price",
       supplier: "Supplier",

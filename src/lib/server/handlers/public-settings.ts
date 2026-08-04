@@ -43,6 +43,8 @@ export async function handlePublicSettings(
 
   if (action === "logo" && request.method === "GET") {
     let tenantId = shop ? await resolveTenantIdByShopSlug(shop) : null;
+    const tenantParam = Number(request.nextUrl.searchParams.get("tenant_id") ?? 0);
+    if (!tenantId && tenantParam > 0) tenantId = tenantParam;
     if (!tenantId) tenantId = await getDefaultTenantId();
 
     const db = getSupabaseAdmin();

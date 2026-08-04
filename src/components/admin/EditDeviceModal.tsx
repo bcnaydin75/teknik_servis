@@ -1,12 +1,21 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { checkCustomer, fetchInventory, updateCustomer, updateDevice } from "@/lib/admin-api";
 import type { CustomerCheckData, DeviceListItem, InventoryItem } from "@/types/admin";
 import { DEVICE_STATUS_OPTIONS } from "@/types/admin";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency, statusKey } from "@/lib/i18n/format";
 import CustomerAlert from "./CustomerAlert";
+import {
+  ModalCloseButton,
+  modalBackdropClass,
+  modalInputClass,
+  modalLabelClass,
+  modalPrimaryBtnClass,
+  modalSecondaryBtnClass,
+  useModalHotkeys,
+} from "./modal-ui";
 
 interface EditDeviceModalProps {
   device: DeviceListItem | null;
@@ -17,6 +26,7 @@ interface EditDeviceModalProps {
 
 export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCosts = true }: EditDeviceModalProps) {
   const { t, locale } = useTranslation();
+  const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(false);
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +45,17 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
   const [imeiNo, setImeiNo] = useState("");
   const [cihazSifresi, setCihazSifresi] = useState("");
   const [showDevicePassword, setShowDevicePassword] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (!loading) onClose();
+  }, [loading, onClose]);
+
+  useModalHotkeys({
+    open: Boolean(device),
+    onClose: handleClose,
+    formRef,
+    disabled: loading || inventoryLoading,
+  });
 
   useEffect(() => {
     if (!device) return;
@@ -195,29 +216,21 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
       <button
         type="button"
         aria-label={t("common.close")}
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-        onClick={onClose}
+        className={modalBackdropClass}
+        onClick={handleClose}
       />
 
-      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl dark:bg-slate-900">
+      <div className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl dark:bg-slate-900 dark:ring-1 dark:ring-slate-700/80">
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4 sm:px-8">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-700 sm:px-8">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">{t("admin.modals.editDevice.title")}</h2>
-            <p className="mt-0.5 font-mono text-sm text-blue-600">{device.takip_kodu}</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t("admin.modals.editDevice.title")}</h2>
+            <p className="mt-0.5 font-mono text-sm text-blue-600 dark:text-blue-400">{device.takip_kodu}</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <ModalCloseButton onClick={handleClose} label={t("common.close")} />
         </div>
 
-        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <form ref={formRef} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           <div className="grid gap-6 p-6 sm:grid-cols-5 sm:p-8">
             {/* Sol: Durum + Parçalar */}
             <div className="space-y-5 sm:col-span-3">
@@ -225,11 +238,11 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="imei_no" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.imei")}</label>
-                  <input id="imei_no" value={imeiNo} onChange={(e) => setImeiNo(e.target.value)} disabled={loading} placeholder={t("admin.modals.addDevice.imeiPlaceholder")} maxLength={20} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 font-mono outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20" />
+                  <label htmlFor="imei_no" className={modalLabelClass}>{t("admin.modals.addDevice.imei")}</label>
+                  <input id="imei_no" value={imeiNo} onChange={(e) => setImeiNo(e.target.value)} disabled={loading} placeholder={t("admin.modals.addDevice.imeiPlaceholder")} maxLength={20} className={`mt-1.5 font-mono ${modalInputClass}`} />
                 </div>
                 <div>
-                  <label htmlFor="cihaz_sifresi" className="block text-sm font-medium text-slate-700">{t("admin.modals.addDevice.devicePassword")}</label>
+                  <label htmlFor="cihaz_sifresi" className={modalLabelClass}>{t("admin.modals.addDevice.devicePassword")}</label>
                   <div className="relative mt-1.5">
                     <input
                       id="cihaz_sifresi"
@@ -238,9 +251,9 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                       onChange={(e) => setCihazSifresi(e.target.value)}
                       disabled={loading}
                       placeholder={t("admin.modals.addDevice.devicePasswordPlaceholder")}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 pr-11 outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                      className={`pr-11 ${modalInputClass}`}
                     />
-                    <button type="button" onClick={() => setShowDevicePassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    <button type="button" onClick={() => setShowDevicePassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         {showDevicePassword ? (
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
@@ -257,7 +270,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
               </div>
 
               <div>
-                <label htmlFor="cihaz_durumu" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="cihaz_durumu" className={modalLabelClass}>
                   {t("admin.modals.editDevice.status")}
                 </label>
                 <select
@@ -266,7 +279,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                   defaultValue={device.cihaz_durumu}
                   disabled={loading}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                  className={`mt-1.5 ${modalInputClass}`}
                 >
                   {DEVICE_STATUS_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -275,14 +288,13 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                   ))}
                 </select>
                 {showDeliveryHint && (
-                  <p className="mt-1.5 text-xs text-amber-600">
+                  <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
                     {t("admin.modals.editDevice.deliveryHint")}
                   </p>
                 )}
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-slate-700">
+                <label className={modalLabelClass}>
                   {t("admin.modals.editDevice.stockParts")}
                 </label>
 
@@ -417,7 +429,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
               </div>
 
               <div>
-                <label htmlFor="aciklama" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="aciklama" className={modalLabelClass}>
                   {t("admin.modals.editDevice.technicianNote")}
                 </label>
                 <textarea
@@ -426,7 +438,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                   rows={2}
                   defaultValue={device.aciklama ?? ""}
                   disabled={loading}
-                  className="mt-1.5 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                  className={`mt-1.5 resize-none ${modalInputClass}`}
                 />
               </div>
             </div>
@@ -434,8 +446,8 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
             {/* Sağ: Fiyatlandırma / kaydet */}
             <div className="space-y-4 sm:col-span-2">
               {canSeeCosts && (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5">
-                <h3 className="text-sm font-semibold text-slate-700">{t("admin.modals.editDevice.costDetail")}</h3>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-5 dark:border-slate-700 dark:bg-slate-800/60">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t("admin.modals.editDevice.costDetail")}</h3>
 
                 <div className="mt-4 space-y-3">
                   <div className="flex items-center justify-between text-sm">
@@ -452,7 +464,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                       value={iscilikUcreti || ""}
                       onChange={(e) => setIscilikUcreti(parseFloat(e.target.value) || 0)}
                       disabled={loading}
-                      className="w-28 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-right text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60"
+                      className="w-28 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-right text-sm font-semibold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                     />
                   </div>
                   <div className="border-t border-slate-200 pt-3">
@@ -472,13 +484,13 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                       onChange={(e) => handleIndirimChange(parseFloat(e.target.value) || 0)}
                       disabled={loading}
                       placeholder="0"
-                      className="w-28 rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-right text-sm font-semibold text-orange-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:opacity-60"
+                      className="w-28 rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 text-right text-sm font-semibold text-orange-700 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 disabled:opacity-60 dark:border-orange-800/60 dark:bg-orange-950/40 dark:text-orange-300"
                     />
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-xl bg-blue-600 p-4 text-white">
-                  <label htmlFor="toplam_ucret" className="block text-xs font-medium text-blue-200">
+                <div className="mt-4 rounded-xl bg-blue-700 p-4 text-white dark:bg-blue-800">
+                  <label htmlFor="toplam_ucret" className="block text-xs font-medium text-blue-100/80">
                     {t("admin.modals.editDevice.totalEditable")}
                   </label>
                   <div className="mt-1 flex items-center gap-1">
@@ -491,11 +503,11 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
                       value={toplamUcret || ""}
                       onChange={(e) => handleToplamChange(parseFloat(e.target.value) || 0)}
                       disabled={loading}
-                      className="w-full bg-transparent text-2xl font-bold outline-none placeholder:text-blue-300"
+                      className="w-full bg-transparent text-2xl font-bold outline-none placeholder:text-blue-200/70"
                     />
                   </div>
                   {indirim > 0 && (
-                    <p className="mt-1 text-xs text-blue-200">
+                    <p className="mt-1 text-xs text-blue-100/80">
                       {t("admin.modals.editDevice.discountApplied", { amount: formatCurrency(indirim, locale) })}
                     </p>
                   )}
@@ -504,7 +516,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
               )}
 
               {error && (
-                <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
                   {error}
                 </p>
               )}
@@ -512,16 +524,16 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   disabled={loading}
-                  className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                  className={modalSecondaryBtnClass}
                 >
                   {t("common.cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={loading || inventoryLoading}
-                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-60"
+                  className={modalPrimaryBtnClass}
                 >
                   {loading ? t("common.saving") : t("admin.modals.editDevice.update")}
                 </button>
