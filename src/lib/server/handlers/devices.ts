@@ -460,6 +460,45 @@ export async function handleUpdateDevice(request: NextRequest): Promise<NextResp
     }
   }
 
+  // Durum değiştiyse müşteri e-postasına bildirim (başarısız olursa güncellemeyi bozma)
+  if (newStatus !== existing.cihaz_durumu) {
+    try {
+      const customerJoin = existing[Tables.musteriler] as
+        | { ad_soyad?: string; email?: string | null }
+        | null
+        | undefined;
+      let email = (customerJoin?.email ?? "").trim();
+      let musteriAdi = customerJoin?.ad_soyad ?? "Müşteri";
+      if (!email && existing.customer_id) {
+        const { data: cust } = await db
+          .from(Tables.musteriler)
+          .select("ad_soyad, email")
+          .eq("id", existing.customer_id)
+          .maybeSingle();
+        email = (cust?.email ?? "").trim();
+        if (cust?.ad_soyad) musteriAdi = cust.ad_soyad;
+      }
+      if (email && email.includes("@")) {
+        const { getShopSettingsForTenant } = await import("../shop-settings");
+        const { sendRepairStatusEmail } = await import("../mail");
+        const { getTrackingUrl } = await import("@/lib/whatsapp");
+        const shop = await getShopSettingsForTenant(tenantId);
+        void sendRepairStatusEmail({
+          to: email,
+          musteriAdi,
+          takipKodu: String(existing.takip_kodu),
+          cihazModeli: String(existing.cihaz_modeli),
+          durum: String(newStatus),
+          firmaAdi: shop.firma_adi,
+          firmaTelefon: shop.telefon,
+          trackingUrl: getTrackingUrl(String(existing.takip_kodu)),
+        }).catch((err) => console.error("[status-mail]", err));
+      }
+    } catch (err) {
+      console.error("[status-mail]", err);
+    }
+  }
+
   return jsonOk({ message: "Cihaz güncellendi." });
 }
 
@@ -555,6 +594,23 @@ export async function handleRepairStatus(
     if (customer?.ad_soyad) musteriAdi = customer.ad_soyad;
   }
 
+  const repairId = Number(row.id);
+  const { data: warrantyRows } = await db
+    .from(Tables.garantiler)
+    .select("id, parca_adi, garanti_ay, baslangic_tarihi, bitis_tarihi")
+    .eq("repair_id", repairId)
+    .order("bitis_tarihi", { ascending: false });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const garantiler = (warrantyRows ?? []).map((w) => ({
+    id: w.id,
+    parca_adi: w.parca_adi,
+    garanti_ay: Number(w.garanti_ay ?? 0),
+    baslangic_tarihi: w.baslangic_tarihi,
+    bitis_tarihi: w.bitis_tarihi,
+    aktif: String(w.bitis_tarihi) >= today,
+  }));
+
   const settingsTenant = Number(row.tenant_id) || 0;
   const { getShopSettingsForTenant } = await import("../shop-settings");
   const shopSettings =
@@ -581,6 +637,7 @@ export async function handleRepairStatus(
     ucret_detayi_goster: shopSettings.ucret_detayi_goster !== false,
     firma_adi: shopSettings.firma_adi ?? null,
     firma_telefon: shopSettings.telefon ?? null,
+    garantiler,
   };
 
   if (!shopSettings.ucret_detayi_goster) {

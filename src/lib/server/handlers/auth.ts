@@ -26,9 +26,32 @@ import {
 } from "../session";
 import { getSupabaseAdmin } from "../supabase";
 import { Tables } from "../db-tables";
+import {
+  clearRateLimit,
+  clientIp,
+  consumeRateLimit,
+} from "../rate-limit";
+
+const LOGIN_IP = { limit: 25, windowMs: 15 * 60_000, lockMs: 15 * 60_000 };
+const LOGIN_USER = { limit: 8, windowMs: 15 * 60_000, lockMs: 15 * 60_000 };
+const OTP_REQ_IP = { limit: 8, windowMs: 60 * 60_000, lockMs: 60 * 60_000 };
+const OTP_REQ_USER = { limit: 3, windowMs: 60 * 60_000, lockMs: 60 * 60_000 };
+const OTP_CONFIRM_IP = { limit: 20, windowMs: 15 * 60_000, lockMs: 15 * 60_000 };
+const OTP_CONFIRM_TOKEN = { limit: 5, windowMs: 15 * 60_000, lockMs: 30 * 60_000 };
+
+function rateLimited(retryAfterSec: number): NextResponse {
+  const res = jsonFail(
+    "Çok fazla deneme. Lütfen birkaç dakika bekleyin.",
+    429
+  );
+  res.headers.set("Retry-After", String(Math.max(1, retryAfterSec)));
+  return res;
+}
+
 export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   const action = request.nextUrl.searchParams.get("action") ?? "";
   const db = getSupabaseAdmin();
+  const ip = clientIp(request);
 
   if (action === "login" && request.method === "POST") {
     let body: { username?: string; password?: string; rememberMe?: boolean };
@@ -46,6 +69,12 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
       return jsonFail("Kullanıcı adı ve şifre zorunludur.", 400);
     }
 
+    const userKey = username.toLowerCase();
+    const ipLimit = consumeRateLimit(`login:ip:${ip}`, LOGIN_IP);
+    if (!ipLimit.ok) return rateLimited(ipLimit.retryAfterSec);
+    const userLimit = consumeRateLimit(`login:user:${userKey}`, LOGIN_USER);
+    if (!userLimit.ok) return rateLimited(userLimit.retryAfterSec);
+
     const { data: user, error } = await db
       .from(Tables.yoneticiKullanicilar)
       .select("*")
@@ -54,24 +83,7 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
 
     if (error) {
       console.error("[auth/login] supabase:", error.message, error.code, error.details);
-      const msg = (error.message ?? "").toLowerCase();
-      if (
-        msg.includes("could not find the table") ||
-        msg.includes("does not exist") ||
-        msg.includes("schema cache")
-      ) {
-        return jsonFail(
-          "Veritabanı tablosu bulunamadı. supabase/migrations/004_turkce_tablo_adlari.sql çalıştırıldı mı?",
-          500
-        );
-      }
-      if (msg.includes("jwt") || msg.includes("api key") || msg.includes("invalid")) {
-        return jsonFail(
-          "Veritabanı bağlantı hatası. SUPABASE_SERVICE_ROLE_KEY kontrol edin.",
-          500
-        );
-      }
-      return jsonFail(`Veritabanı hatası: ${error.message}`, 500);
+      return jsonFail("Giriş şu an yapılamıyor. Lütfen daha sonra deneyin.", 500);
     }
 
     if (!user) {
@@ -86,6 +98,8 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     if (!user.aktif) {
       return jsonFail("Hesabınız pasif.", 403);
     }
+
+    clearRateLimit(`login:user:${userKey}`);
 
     const tenantId = resolveSessionTenantId({
       id: user.id,
@@ -143,6 +157,12 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
 
     const username = (body.username ?? "").trim();
     if (!username) return jsonFail("Kullanıcı adı zorunludur.", 400);
+
+    const userKey = username.toLowerCase();
+    const ipLimit = consumeRateLimit(`otp-req:ip:${ip}`, OTP_REQ_IP);
+    if (!ipLimit.ok) return rateLimited(ipLimit.retryAfterSec);
+    const userLimit = consumeRateLimit(`otp-req:user:${userKey}`, OTP_REQ_USER);
+    if (!userLimit.ok) return rateLimited(userLimit.retryAfterSec);
 
     const { data: user } = await db
       .from(Tables.yoneticiKullanicilar)
@@ -235,6 +255,12 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     const pwdErr = validatePassword(newPassword);
     if (pwdErr) return jsonFail(pwdErr, 400);
 
+    const ipLimit = consumeRateLimit(`otp-ok:ip:${ip}`, OTP_CONFIRM_IP);
+    if (!ipLimit.ok) return rateLimited(ipLimit.retryAfterSec);
+    const tokenKey = `otp-ok:tok:${resetToken.slice(0, 24)}`;
+    const tokLimit = consumeRateLimit(tokenKey, OTP_CONFIRM_TOKEN);
+    if (!tokLimit.ok) return rateLimited(tokLimit.retryAfterSec);
+
     const payload = await verifyPasswordResetToken(resetToken);
     if (!payload) {
       return jsonFail("Kod süresi dolmuş veya geçersiz. Yeni kod isteyin.", 400);
@@ -242,6 +268,7 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     if (hashResetCode(code) !== payload.codeHash) {
       return jsonFail("Doğrulama kodu hatalı.", 403);
     }
+    clearRateLimit(tokenKey);
 
     const { error: updErr } = await db
       .from(Tables.yoneticiKullanicilar)
@@ -261,40 +288,40 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   return jsonFail("Geçersiz istek.", 405);
 }
 
+/**
+ * Health check — asla kullanıcı, hata mesajı, sürüm veya sayım sızdırmaz.
+ * `check=db` yalnızca { ok: true|false } döner.
+ * Opsiyonel: PING_SECRET tanımlıysa ?token=... gerekir (DB kontrolü için).
+ */
 export async function handlePing(request?: NextRequest): Promise<NextResponse> {
-  const base = {
-    ok: true,
-    api: "native",
-    node: process.version,
-  };
+  const checkDb = request?.nextUrl.searchParams.get("check") === "db";
 
-  if (request?.nextUrl.searchParams.get("check") === "db") {
-    try {
-      const db = getSupabaseAdmin();
-      const { count, error } = await db
-        .from(Tables.yoneticiKullanicilar)
-        .select("*", { count: "exact", head: true });
+  if (!checkDb) {
+    return NextResponse.json({ ok: true });
+  }
 
-      const { data: sample } = await db
-        .from(Tables.yoneticiKullanicilar)
-        .select("username, aktif")
-        .ilike("username", "bcnaydin75")
-        .maybeSingle();
-
-      return NextResponse.json({
-        ...base,
-        admin_count: count ?? 0,
-        bcnaydin75: sample ?? null,
-        db_error: error?.message ?? null,
-      });
-    } catch (e) {
-      return NextResponse.json({
-        ...base,
-        ok: false,
-        db_error: e instanceof Error ? e.message : "unknown",
-      });
+  const secret = (process.env.PING_SECRET ?? "").trim();
+  if (secret) {
+    const token = (request?.nextUrl.searchParams.get("token") ?? "").trim();
+    if (!token || token !== secret) {
+      return NextResponse.json({ ok: false }, { status: 401 });
     }
   }
 
-  return NextResponse.json(base);
+  try {
+    const db = getSupabaseAdmin();
+    const { error } = await db
+      .from(Tables.yoneticiKullanicilar)
+      .select("id", { head: true, count: "exact" })
+      .limit(1);
+
+    if (error) {
+      console.error("[ping/db]", error.message);
+      return NextResponse.json({ ok: false }, { status: 503 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[ping/db]", e instanceof Error ? e.message : e);
+    return NextResponse.json({ ok: false }, { status: 503 });
+  }
 }

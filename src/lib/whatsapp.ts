@@ -45,3 +45,13 @@ export function getWhatsAppUrl(phone: string | null, message: string): string | 
 export function getTrackingUrl(takipKodu: string): string {
   return `${getAppOrigin()}/?kod=${encodeURIComponent(takipKodu)}`;
 }
+
+export function buildCustomerPickupMessage(opts: {
+  takipKodu: string;
+  cihazModeli: string;
+}): string {
+  return (
+    `Merhaba, ${opts.takipKodu} takip kodlu ${opts.cihazModeli} cihazımı ` +
+    `teslim almak istiyorum.`
+  );
+}

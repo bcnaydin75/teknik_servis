@@ -25,6 +25,9 @@ async function parseAuthResponse(response: Response): Promise<AuthResponse> {
   const text = await response.text();
 
   if (!text.trim()) {
+    if (response.status === 429) {
+      return { success: false, message: apiFallback("admin.login.tooManyAttempts") };
+    }
     if (response.status === 401) {
       return { success: false, message: apiFallback("errors.wrongPassword") };
     }
@@ -36,6 +39,12 @@ async function parseAuthResponse(response: Response): Promise<AuthResponse> {
 
   try {
     const data = JSON.parse(text) as AuthResponse;
+    if (response.status === 429) {
+      return {
+        success: false,
+        message: data.message ?? apiFallback("admin.login.tooManyAttempts"),
+      };
+    }
     if (!response.ok && data.success !== false) {
       return {
         success: false,

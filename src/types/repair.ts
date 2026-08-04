@@ -6,6 +6,15 @@ export type DeviceStatus =
   | "hazir"
   | "teslim_edildi";
 
+export interface RepairWarranty {
+  id: number;
+  parca_adi: string;
+  garanti_ay: number;
+  baslangic_tarihi: string;
+  bitis_tarihi: string;
+  aktif: boolean;
+}
+
 export interface RepairData {
   takip_kodu: string;
   musteri_adi: string;
@@ -22,6 +31,7 @@ export interface RepairData {
   ucret_detayi_goster?: boolean;
   firma_adi?: string | null;
   firma_telefon?: string | null;
+  garantiler?: RepairWarranty[];
 }
 
 export interface RepairApiResponse {

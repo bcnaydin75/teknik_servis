@@ -18,9 +18,9 @@ const REMEMBER_USERNAME_KEY = "admin_login_remember_username";
 const LOGIN_FAILURES_KEY = "admin_login_failures";
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
-/** Varsayılan kapalı; production'da açmak için NEXT_PUBLIC_ENABLE_LOGIN_LOCKOUT=true */
+/** Varsayılan açık; kapatmak için NEXT_PUBLIC_DISABLE_LOGIN_LOCKOUT=true */
 const LOGIN_LOCKOUT_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_LOGIN_LOCKOUT === "true";
+  process.env.NEXT_PUBLIC_DISABLE_LOGIN_LOCKOUT !== "true";
 
 type FailureRecord = {
   count: number;
