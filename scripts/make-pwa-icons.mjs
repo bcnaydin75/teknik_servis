@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+/**
+ * PWA ikonları — amblem ortada, koyu zemin kareyi tamamen kaplar (beyaz köşe yok).
+ * Kullanım: node scripts/make-pwa-icons.mjs
+ */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +12,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const srcPath = path.join(root, "public/brand-logo.png");
 const outDir = path.join(root, "public/icons");
+
+if (!fs.existsSync(srcPath)) {
+  console.error("public/brand-logo.png bulunamadı");
+  process.exit(1);
+}
+
 fs.mkdirSync(outDir, { recursive: true });
+
+/** Teknik Servis ikonundaki gibi koyu lacivert zemin */
+const BG = { r: 15, g: 23, b: 42, alpha: 1 }; // #0f172a
 
 function circleMask(size) {
   const r = size / 2;
@@ -17,6 +30,7 @@ function circleMask(size) {
   );
 }
 
+/** Sadece gümüş amblemi kes (şeffaf dışı) */
 async function extractBadgeOnly() {
   const { data, info } = await sharp(srcPath)
     .raw()
@@ -71,7 +85,6 @@ async function extractBadgeOnly() {
   const cw = crop.info.width;
   const ch = crop.info.height;
 
-  // Koyu navy zemini sil — gümüş halka + mavi dişli + yazı kalsın
   for (let i = 0; i < d.length; i += 4) {
     const r = d[i];
     const g = d[i + 1];
@@ -109,12 +122,19 @@ async function extractBadgeOnly() {
     .toBuffer();
 }
 
-async function makeIcon(canvasSize, fillRatio, outFile) {
+/**
+ * Koyu kare zemin (köşeye kadar) + ortada amblem.
+ * fillRatio: amblemin kareye oranı (any ~0.88, maskable ~0.72)
+ */
+async function makeFilledIcon(canvasSize, fillRatio, outFile) {
   const badge = await extractBadgeOnly();
   const logoSize = Math.round(canvasSize * fillRatio);
 
   const resized = await sharp(badge)
-    .resize(logoSize, logoSize, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(logoSize, logoSize, {
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
     .png()
     .toBuffer();
 
@@ -123,7 +143,7 @@ async function makeIcon(canvasSize, fillRatio, outFile) {
       width: canvasSize,
       height: canvasSize,
       channels: 4,
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      background: BG,
     },
   })
     .composite([{ input: resized, gravity: "centre" }])
@@ -133,30 +153,16 @@ async function makeIcon(canvasSize, fillRatio, outFile) {
   console.log("wrote", path.relative(root, outFile));
 }
 
-const badge = await extractBadgeOnly();
-await sharp(badge).resize(512, 512).png().toFile(path.join(outDir, "icon-512.png"));
-await sharp(badge).resize(192, 192).png().toFile(path.join(outDir, "icon-192.png"));
-await sharp(badge)
-  .resize(Math.round(512 * 0.9), Math.round(512 * 0.9), {
-    fit: "contain",
-    background: { r: 0, g: 0, b: 0, alpha: 0 },
-  })
-  .png()
-  .toBuffer()
-  .then((buf) =>
-    sharp({
-      create: { width: 512, height: 512, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-    })
-      .composite([{ input: buf, gravity: "centre" }])
-      .png()
-      .toFile(path.join(outDir, "icon-maskable-512.png"))
-  );
-await sharp(badge).resize(180, 180).png().toFile(path.join(root, "public/apple-touch-icon.png"));
-await sharp(badge).resize(32, 32).png().toFile(path.join(root, "public/favicon.png"));
+await makeFilledIcon(192, 0.9, path.join(outDir, "icon-192.png"));
+await makeFilledIcon(512, 0.9, path.join(outDir, "icon-512.png"));
+// Maskable: OS köşe keser — amblem güvenli alanda
+await makeFilledIcon(512, 0.72, path.join(outDir, "icon-maskable-512.png"));
+await makeFilledIcon(180, 0.9, path.join(root, "public/apple-touch-icon.png"));
+await makeFilledIcon(32, 0.92, path.join(root, "public/favicon.png"));
 
 for (const f of ["_t.png", "_t2.png", "_badge-preview.png"]) {
   const p = path.join(outDir, f);
   if (fs.existsSync(p)) fs.unlinkSync(p);
 }
 
-console.log("done");
+console.log("PWA ikonları güncellendi (koyu zemin, tam kaplama, beyaz yok).");
