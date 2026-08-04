@@ -30,22 +30,18 @@ export default function AdminUserBadge({ compact = false }: AdminUserBadgeProps)
 
   return (
     <div
-      className={`flex shrink-0 items-center gap-2 rounded-xl bg-slate-100/80 ring-1 ring-slate-200 dark:bg-slate-800/80 dark:ring-slate-700 ${
-        compact ? "px-2.5 py-1.5" : "px-3 py-2"
+      className={`flex shrink-0 items-center gap-1.5 rounded-xl bg-slate-100/80 ring-1 ring-slate-200 dark:bg-slate-800/80 dark:ring-slate-700 ${
+        compact ? "px-2 py-1.5" : "px-3 py-2"
       }`}
       title={`${username} — ${t(roleKey)}`}
     >
+      {!compact && (
+        <span className="max-w-[9rem] truncate font-mono text-sm text-slate-800 dark:text-slate-100">
+          {username}
+        </span>
+      )}
       <span
-        className={`max-w-[9rem] truncate font-mono text-slate-800 dark:text-slate-100 ${
-          compact ? "text-xs" : "text-sm"
-        }`}
-      >
-        {username}
-      </span>
-      <span
-        className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${badgeStyle} ${
-          compact ? "px-1.5" : ""
-        }`}
+        className={`shrink-0 rounded-lg px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ring-1 ${badgeStyle}`}
       >
         {t(roleKey)}
       </span>

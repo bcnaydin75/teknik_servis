@@ -337,7 +337,7 @@ export default function SettingsPage() {
         </form>
       ) : tab === "personel" ? (
         <div className="space-y-6">
-          <form onSubmit={handleAddStaff} className="max-w-2xl space-y-4 rounded-2xl bg-white p-6 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
+          <form onSubmit={handleAddStaff} className="w-full max-w-2xl min-w-0 space-y-4 overflow-hidden rounded-2xl bg-white p-4 ring-1 ring-slate-200 sm:p-6 dark:bg-slate-800 dark:ring-slate-700">
             <h3 className="font-semibold text-slate-900 dark:text-white">
               {isSuperadmin
                 ? t("admin.settings.personel.newShopAdmin")
@@ -348,10 +348,10 @@ export default function SettingsPage() {
                 ? t("admin.settings.personel.shopAdminScopeHint")
                 : t("admin.settings.personel.staffScopeHint")}
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <input value={newStaff.ad_soyad} onChange={(e) => setNewStaff({ ...newStaff, ad_soyad: e.target.value })} placeholder={t("admin.settings.personel.fullName")} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <input value={newStaff.ad_soyad} onChange={(e) => setNewStaff({ ...newStaff, ad_soyad: e.target.value })} placeholder={t("admin.settings.personel.fullName")} className="min-w-0 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
               {isSuperadmin && (
-                <div>
+                <div className="min-w-0">
                   <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                     {t("admin.settings.personel.companyName")} *
                   </label>
@@ -360,18 +360,21 @@ export default function SettingsPage() {
                     onChange={(e) => setNewStaff({ ...newStaff, firma_adi: e.target.value })}
                     placeholder={t("admin.settings.personel.companyNamePlaceholder")}
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                    className="min-w-0 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
                   />
                 </div>
               )}
-              <input value={newStaff.username} onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })} placeholder={t("admin.settings.personel.username")} required className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
-              <PasswordInput
-                value={newStaff.password}
-                onChange={(password) => setNewStaff({ ...newStaff, password })}
-                placeholder={t("admin.settings.personel.password")}
-                required
-              />
-              <select value={newStaff.role} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+              <input value={newStaff.username} onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })} placeholder={t("admin.settings.personel.username")} required className="min-w-0 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
+              <div className="min-w-0">
+                <PasswordInput
+                  value={newStaff.password}
+                  onChange={(password) => setNewStaff({ ...newStaff, password })}
+                  placeholder={t("admin.settings.personel.password")}
+                  required
+                  className="min-w-0 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 pr-14 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+              <select value={newStaff.role} onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })} className="min-w-0 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 dark:border-slate-600 dark:bg-slate-900 dark:text-white sm:col-span-2">
                 {roleOptions.includes("admin") && (
                   <option value="admin">{t("roles.admin")} — {t("roles.adminDesc")}</option>
                 )}
@@ -384,7 +387,7 @@ export default function SettingsPage() {
               </select>
             </div>
             <p className="text-xs text-slate-500">{t("admin.password.hint")}</p>
-            <button type="submit" className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">
+            <button type="submit" className="w-full rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto">
               {isSuperadmin
                 ? t("admin.settings.personel.addShopAdmin")
                 : t("admin.settings.personel.addStaff")}

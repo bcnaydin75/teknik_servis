@@ -36,7 +36,7 @@ export default function PasswordInput({
   }
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0 w-full">
       <input
         id={id}
         type={visible ? "text" : "password"}

@@ -124,14 +124,35 @@ export default function PosPage() {
           ) : (
             <ul className="mt-4 space-y-3">
               {cart.map((c) => (
-                <li key={c.item.id} className="flex items-center justify-between gap-2 text-sm">
-                  <span className="flex-1 text-slate-700 dark:text-slate-300">{c.item.part_name}</span>
-                  <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => updateQty(c.item.id, -1)} className="h-7 w-7 rounded bg-slate-100 dark:bg-slate-700">−</button>
-                    <span className="w-6 text-center">{c.quantity}</span>
-                    <button type="button" onClick={() => updateQty(c.item.id, 1)} className="h-7 w-7 rounded bg-slate-100 dark:bg-slate-700">+</button>
+                <li
+                  key={c.item.id}
+                  className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                >
+                  <span className="min-w-0 flex-1 basis-[40%] truncate font-medium text-slate-800 dark:text-white">
+                    {c.item.part_name}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => updateQty(c.item.id, -1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-white"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-7 text-center text-base font-semibold text-slate-900 dark:text-white">
+                      {c.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => updateQty(c.item.id, 1)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-white"
+                    >
+                      +
+                    </button>
                   </div>
-                  <span className="font-medium">{formatCurrency(c.item.sell_price * c.quantity, locale)}</span>
+                  <span className="shrink-0 font-semibold text-slate-900 dark:text-white">
+                    {formatCurrency(c.item.sell_price * c.quantity, locale)}
+                  </span>
                 </li>
               ))}
             </ul>
