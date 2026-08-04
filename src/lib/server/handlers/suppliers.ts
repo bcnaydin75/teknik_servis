@@ -95,20 +95,57 @@ export async function handleSuppliers(request: NextRequest): Promise<NextRespons
       const supplierId = Number(body.supplier_id);
       const amount = Number(body.amount);
       const type = body.type as "borc" | "odeme";
+      const description = (body.description ?? "").trim() || null;
 
-      if (!supplierId || !amount || !["borc", "odeme"].includes(type)) {
+      if (!supplierId || !amount || amount <= 0 || !["borc", "odeme"].includes(type)) {
         return jsonFail("Geçersiz işlem.", 400);
       }
 
-      await db.from(Tables.tedarikciIslemleri).insert({
+      let supplierQuery = db
+        .from(Tables.tedarikciler)
+        .select("id, firma_adi, tenant_id")
+        .eq("id", supplierId);
+      if (scope.mode === "shop") {
+        supplierQuery = supplierQuery.eq("tenant_id", scope.tenantId);
+      }
+      const { data: supplier } = await supplierQuery.maybeSingle();
+      if (!supplier) return jsonFail("Tedarikçi bulunamadı.", 404);
+
+      const { error: txErr } = await db.from(Tables.tedarikciIslemleri).insert({
         tenant_id: tenantId,
         supplier_id: supplierId,
         type,
         amount,
-        description: (body.description ?? "").trim() || null,
+        description,
       });
+      if (txErr) return jsonFail("İşlem kaydedilemedi.", 500);
 
-      return jsonOk({ message: "İşlem kaydedildi." });
+      // Ödeme → kasadan gider (borç oluşunca değil; nakit çıkışı ödemede)
+      if (type === "odeme") {
+        const firma = supplier.firma_adi || `#${supplierId}`;
+        const { error: finErr } = await db.from(Tables.finansIslemleri).insert({
+          tenant_id: tenantId,
+          type: "expense",
+          amount,
+          description: description
+            ? `Tedarikçi ödeme — ${firma}: ${description}`
+            : `Tedarikçi ödeme — ${firma}`,
+        });
+        if (finErr) {
+          console.error("[suppliers] finance expense", finErr.message);
+          return jsonFail(
+            "Tedarikçi ödemesi kaydedildi ancak kasa gideri yazılamadı.",
+            500
+          );
+        }
+      }
+
+      return jsonOk({
+        message:
+          type === "odeme"
+            ? "Ödeme kaydedildi ve kasaya gider işlendi."
+            : "Borç kaydedildi.",
+      });
     }
 
     return jsonFail("Geçersiz işlem.", 400);

@@ -438,7 +438,7 @@ export const messages = {
     },
     finance: {
       title: "Kasa / Finans",
-      subtitle: "Gelir, gider ve net kasa bakiyesi",
+      subtitle: "Gelir, gider ve net kasa bakiyesi — tedarikçi ödemeleri gider olarak yansır",
       netCash: "Net Kasa",
       netCashSub: "Gelir − Gider",
       totalIncome: "Toplam Gelir",
@@ -482,9 +482,9 @@ export const messages = {
     },
     suppliers: {
       title: "Tedarikçiler",
-      subtitle: "Tedarikçi firmalar ve cari borç takibi",
+      subtitle: "Tedarikçi firmalar ve cari borç takibi — ödemeler kasaya gider yazar",
       pageTitle: "Tedarikçiler / Cari",
-      pageSubtitle: "Toptancı borç ve ödeme takibi",
+      pageSubtitle: "Toptancı borç ve ödeme takibi (ödeme → kasa gider)",
       addTransaction: "Cari Hareket",
       totalRemainingDebt: "Toplam Kalan Borç",
       supplierList: "Tedarikçi Listesi",
