@@ -1,7 +1,7 @@
 import { Tables } from "./db-tables";
 import { getSupabaseAdmin } from "./supabase";
 
-const ALLOWED_LOCALES = new Set(["tr", "en", "es", "it"]);
+const ALLOWED_LOCALES = new Set(["tr", "en", "es", "it", "ru"]);
 
 export function normalizeLocale(locale: string | null | undefined): string {
   const v = (locale ?? "tr").toLowerCase().trim();

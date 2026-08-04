@@ -150,9 +150,18 @@ export default function SettingsPage() {
   }
 
   async function handleLocaleSelect(nextLocale: Locale) {
-    if (!shop || nextLocale === normalizeLocale(shop.default_locale)) return;
+    if (nextLocale === currentLocale) return;
     setSavingLocale(true);
     setError(null);
+
+    // Geliştirici hesabının dükkan profili yok — panel dilini anında değiştir
+    if (!shop || isSuperadmin) {
+      setLocale(nextLocale);
+      setSavingLocale(false);
+      setMessage(t("admin.settings.dil.saved"));
+      return;
+    }
+
     const updated = { ...shop, default_locale: nextLocale };
     const res = await saveShopSettings(updated);
     setSavingLocale(false);
@@ -197,7 +206,9 @@ export default function SettingsPage() {
 
   const roleOptions = assignableStaffRoles(isSuperadmin);
 
-  const currentLocale = normalizeLocale(shop?.default_locale ?? locale);
+  const currentLocale = normalizeLocale(
+    isSuperadmin ? locale : (shop?.default_locale ?? locale)
+  );
 
   const themeModeLabel =
     theme === "system"
@@ -527,7 +538,7 @@ export default function SettingsPage() {
                 className={`rounded-xl px-4 py-2 text-sm font-medium transition disabled:opacity-50 ${
                   currentLocale === loc
                     ? "bg-blue-600 text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white"
+                    : "bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:ring-slate-600 dark:hover:bg-slate-600"
                 }`}
               >
                 {t(`languages.${loc}`)}
