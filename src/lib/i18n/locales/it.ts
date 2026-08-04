@@ -140,7 +140,7 @@ export const messages = {
       rememberMeHint: "Accesso automatico per 1 settimana",
       forgotPassword: "Password dimenticata?",
       forgotPasswordHint:
-        "Il reset via email non è disponibile. Chiedi all'admin del negozio di impostare una nuova password in Impostazioni → Personale. Se sei l'admin, contatta lo sviluppatore o usa supabase/reset_admin_password.sql.",
+        "Per reimpostare la password contatta l'amministratore del negozio. Può impostarne una nuova in Impostazioni → Personale.",
       backToCustomer: "← Torna alla pagina cliente",
       keyboardHint: "Premi Invio per accedere",
       tooManyAttempts: "Troppi tentativi falliti. Attendi qualche minuto.",

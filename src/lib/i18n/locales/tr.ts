@@ -144,7 +144,7 @@ export const messages = {
       rememberMeHint: "1 hafta boyunca otomatik giriş",
       forgotPassword: "Şifremi unuttum",
       forgotPasswordHint:
-        "Şifre e-posta ile sıfırlanamaz. Personelseniz dükkan yöneticinizden Ayarlar → Personel → Şifre sıfırla demesini isteyin. Dükkan admini iseniz geliştiriciye veya supabase/reset_admin_password.sql dosyasına başvurun.",
+        "Şifrenizi sıfırlamak için dükkan yöneticinizle iletişime geçin. Yönetici, Ayarlar → Personel bölümünden yeni şifre tanımlayabilir.",
       backToCustomer: "← Müşteri sayfasına dön",
       keyboardHint: "Enter ile hızlı giriş",
       tooManyAttempts: "Çok fazla başarısız deneme. Lütfen birkaç dakika bekleyin.",

@@ -140,7 +140,7 @@ export const messages = {
       rememberMeHint: "Mantener sesión 1 semana",
       forgotPassword: "¿Olvidó su contraseña?",
       forgotPasswordHint:
-        "No se puede restablecer por correo. Pida a su administrador de tienda una nueva contraseña en Ajustes → Personal. Si usted es el admin, contacte al desarrollador o use supabase/reset_admin_password.sql.",
+        "Para restablecer la contraseña, contacte al administrador de la tienda. Puede definir una nueva en Ajustes → Personal.",
       backToCustomer: "← Volver a la página del cliente",
       keyboardHint: "Pulse Enter para iniciar sesión",
       tooManyAttempts: "Demasiados intentos fallidos. Espere unos minutos.",

@@ -141,7 +141,7 @@ export const messages = {
       rememberMeHint: "Stay signed in for 1 week",
       forgotPassword: "Forgot password?",
       forgotPasswordHint:
-        "Password cannot be reset by email. Ask your shop admin to set a new password under Settings → Staff. If you are the shop admin, contact the developer or use supabase/reset_admin_password.sql.",
+        "To reset your password, contact your shop administrator. They can set a new password under Settings → Staff.",
       backToCustomer: "← Back to customer page",
       keyboardHint: "Press Enter to sign in",
       tooManyAttempts: "Too many failed attempts. Please wait a few minutes.",
