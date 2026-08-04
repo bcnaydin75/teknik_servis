@@ -225,6 +225,7 @@ export const messages = {
       title: "Archivo",
       subtitle: "Registros archivados — filtre por mes/año y búsqueda",
       backToDashboard: "← Panel",
+      backToAll: "← Todos los registros",
       period: "Periodo:",
       loadFailed: "No se pudo cargar el archivo.",
       emptyFiltered: "No hay registros archivados con este filtro.",

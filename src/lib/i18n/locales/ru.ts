@@ -225,6 +225,7 @@ export const messages = {
       title: "Архив",
       subtitle: "Архивные записи устройств — фильтр по месяцу/году и поиск",
       backToDashboard: "← Панель",
+      backToAll: "← Все записи",
       period: "Период:",
       loadFailed: "Не удалось загрузить архив.",
       emptyFiltered: "Нет архивных записей по этому фильтру.",

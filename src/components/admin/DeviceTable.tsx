@@ -40,14 +40,14 @@ function DeviceActions(props: DeviceTableProps & { device: DeviceListItem }) {
           <button
             type="button"
             onClick={() => props.onRestore(device)}
-            className="min-h-[36px] touch-manipulation rounded-lg bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300"
+            className="min-h-[36px] touch-manipulation rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
           >
             {t("admin.deviceTable.restore")}
           </button>
           <button
             type="button"
             onClick={() => props.onPermanentDelete(device)}
-            className="min-h-[36px] touch-manipulation rounded-lg bg-red-100 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300"
+            className="min-h-[36px] touch-manipulation rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
           >
             {t("admin.deviceTable.permanentDelete")}
           </button>

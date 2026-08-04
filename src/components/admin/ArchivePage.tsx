@@ -124,6 +124,16 @@ export default function ArchivePage() {
         }
       >
         <div className="space-y-6">
+          {selectedPeriod && (
+            <button
+              type="button"
+              onClick={() => setSelectedPeriod(null)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              {t("admin.archive.backToAll")}
+            </button>
+          )}
+
           {!loading && periods.length > 0 && (
             <ArchivePeriodCards
               periods={periods}

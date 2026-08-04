@@ -40,10 +40,16 @@ export const STATUS_LABELS: Record<DeviceStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<DeviceStatus, string> = {
-  beklemede: "bg-slate-100 text-slate-700 ring-slate-200",
-  inceleniyor: "bg-amber-50 text-amber-800 ring-amber-200",
-  parca_bekliyor: "bg-orange-50 text-orange-800 ring-orange-200",
-  tamirde: "bg-blue-50 text-blue-800 ring-blue-200",
-  hazir: "bg-emerald-50 text-emerald-800 ring-emerald-200",
-  teslim_edildi: "bg-zinc-100 text-zinc-600 ring-zinc-200",
+  beklemede:
+    "bg-slate-100 text-slate-700 ring-slate-300 dark:bg-slate-700/60 dark:text-slate-200 dark:ring-slate-500",
+  inceleniyor:
+    "bg-amber-100 text-amber-900 ring-amber-300 dark:bg-amber-500/20 dark:text-amber-200 dark:ring-amber-400/50",
+  parca_bekliyor:
+    "bg-orange-100 text-orange-900 ring-orange-300 dark:bg-orange-500/20 dark:text-orange-200 dark:ring-orange-400/50",
+  tamirde:
+    "bg-sky-100 text-sky-900 ring-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:ring-sky-400/50",
+  hazir:
+    "bg-violet-100 text-violet-900 ring-violet-300 dark:bg-violet-500/20 dark:text-violet-200 dark:ring-violet-400/50",
+  teslim_edildi:
+    "bg-emerald-100 text-emerald-800 ring-emerald-300 dark:bg-emerald-500/25 dark:text-emerald-300 dark:ring-emerald-400/50",
 };

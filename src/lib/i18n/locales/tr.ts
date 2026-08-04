@@ -229,6 +229,7 @@ export const messages = {
       title: "Arşiv",
       subtitle: "Arşivlenmiş cihaz kayıtları — ay/yıl ve arama ile filtreleyin",
       backToDashboard: "← Dashboard",
+      backToAll: "← Tüm kayıtlar",
       period: "Dönem:",
       loadFailed: "Arşiv yüklenemedi.",
       emptyFiltered: "Bu filtreye uygun arşiv kaydı yok.",

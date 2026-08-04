@@ -226,6 +226,7 @@ export const messages = {
       title: "Archive",
       subtitle: "Archived device records — filter by month/year and search",
       backToDashboard: "← Dashboard",
+      backToAll: "← All records",
       period: "Period:",
       loadFailed: "Failed to load archive.",
       emptyFiltered: "No archived records match this filter.",
