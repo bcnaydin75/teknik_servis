@@ -155,7 +155,15 @@ export const messages = {
     forgotPassword: {
       title: "Şifremi unuttum",
       subtitle:
-        "Dükkan admini hesabınız için firma profilindeki telefon ile doğrulayıp yeni şifre belirleyin.",
+        "Dükkan admini hesabınız için firma e-postasındaki kod ile yeni şifre belirleyin.",
+      subtitleEmail:
+        "Kullanıcı adınızı girin. Doğrulama kodu firma profilindeki e-posta adresine gönderilir.",
+      subtitleCode: "Kod {email} adresine gönderildi. Kodu ve yeni şifrenizi girin.",
+      emailHint: "Kod, Ayarlar → Firma Profili'ndeki e-postaya gider (15 dk geçerli).",
+      sendCode: "Kod gönder",
+      code: "E-posta kodu",
+      codeSent: "Kod gönderildi: {email}",
+      resend: "← Farklı kullanıcı / yeniden kod iste",
       phone: "Firma telefonu",
       phonePlaceholder: "0555 123 45 67",
       phoneHint: "Ayarlar → Firma Profili'nde kayıtlı telefon numarası",

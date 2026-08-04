@@ -20,7 +20,7 @@ export default function AdminUserBadge({ compact = false }: AdminUserBadgeProps)
       if (!res.success || !res.data) return;
       const isSuperadmin = Boolean(res.data.is_superadmin);
       const role = res.data.role ?? "admin";
-      setUsername(res.data.username);
+      setUsername(res.data.username ?? null);
       setRoleKey(getRoleDisplayKey(role, isSuperadmin));
       setBadgeStyle(getRoleBadgeStyle(role, isSuperadmin));
     });

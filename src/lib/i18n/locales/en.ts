@@ -152,7 +152,15 @@ export const messages = {
     forgotPassword: {
       title: "Forgot password",
       subtitle:
-        "For shop admin accounts, verify with your shop profile phone and set a new password.",
+        "For shop admin accounts, verify with a code sent to your company email and set a new password.",
+      subtitleEmail:
+        "Enter your username. A verification code will be sent to the email in your company profile.",
+      subtitleCode: "Code sent to {email}. Enter the code and your new password.",
+      emailHint: "Code goes to Settings → Company Profile email (valid 15 min).",
+      sendCode: "Send code",
+      code: "Email code",
+      codeSent: "Code sent to {email}",
+      resend: "← Different user / request new code",
       phone: "Shop phone",
       phonePlaceholder: "0555 123 45 67",
       phoneHint: "Phone number saved under Settings → Company Profile",

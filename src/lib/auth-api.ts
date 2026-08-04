@@ -8,7 +8,7 @@ export interface AuthResponse {
   message?: string;
   data?: {
     id?: number;
-    username: string;
+    username?: string;
     role?: string;
     ad_soyad?: string | null;
     must_change_password?: boolean;
@@ -16,6 +16,8 @@ export interface AuthResponse {
     is_superadmin?: boolean;
     is_account_owner?: boolean;
     permissions?: Permissions;
+    resetToken?: string;
+    emailHint?: string;
   };
 }
 
@@ -79,18 +81,36 @@ export async function loginAdmin(
   return parseAuthResponse(response);
 }
 
-export async function forgotPasswordAdmin(payload: {
-  username: string;
-  phone: string;
+export async function requestForgotPassword(
+  username: string
+): Promise<AuthResponse> {
+  const response = await fetch(
+    apiUrl("/api/auth.php?action=forgot_password_request"),
+    {
+      method: "POST",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      credentials: "include",
+      body: JSON.stringify({ username }),
+    }
+  );
+  return parseAuthResponse(response);
+}
+
+export async function confirmForgotPassword(payload: {
+  resetToken: string;
+  code: string;
   new_password: string;
   confirm_password: string;
 }): Promise<AuthResponse> {
-  const response = await fetch(apiUrl("/api/auth.php?action=forgot_password"), {
-    method: "POST",
-    headers: apiHeaders({ "Content-Type": "application/json" }),
-    credentials: "include",
-    body: JSON.stringify(payload),
-  });
+  const response = await fetch(
+    apiUrl("/api/auth.php?action=forgot_password_confirm"),
+    {
+      method: "POST",
+      headers: apiHeaders({ "Content-Type": "application/json" }),
+      credentials: "include",
+      body: JSON.stringify(payload),
+    }
+  );
   return parseAuthResponse(response);
 }
 

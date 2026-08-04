@@ -152,6 +152,14 @@ export const messages = {
       title: "Olvidé mi contraseña",
       subtitle:
         "Para cuentas de admin de tienda, verifique con el teléfono del perfil y defina una nueva contraseña.",
+      subtitleEmail:
+        "Introduzca su usuario. Se enviará un código al correo del perfil de la empresa.",
+      subtitleCode: "Código enviado a {email}. Introduzca el código y la nueva contraseña.",
+      emailHint: "El código va al correo de Ajustes → Perfil (válido 15 min).",
+      sendCode: "Enviar código",
+      code: "Código del correo",
+      codeSent: "Código enviado a {email}",
+      resend: "← Otro usuario / pedir código de nuevo",
       phone: "Teléfono de la empresa",
       phonePlaceholder: "0555 123 45 67",
       phoneHint: "Número guardado en Ajustes → Perfil de empresa",

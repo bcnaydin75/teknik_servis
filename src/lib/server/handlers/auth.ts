@@ -9,6 +9,16 @@ import {
 } from "../auth";
 import { jsonFail, jsonOk } from "../api-response";
 import {
+  generateResetCode,
+  hashResetCode,
+  maskEmail,
+  sendPasswordResetCodeEmail,
+} from "../mail";
+import {
+  signPasswordResetToken,
+  verifyPasswordResetToken,
+} from "../password-reset-token";
+import {
   attachSessionCookie,
   clearSessionCookie,
   sessionTtl,
@@ -16,21 +26,6 @@ import {
 } from "../session";
 import { getSupabaseAdmin } from "../supabase";
 import { Tables } from "../db-tables";
-
-function digitsOnly(value: string): string {
-  return value.replace(/\D/g, "");
-}
-
-function phonesMatch(a: string, b: string): boolean {
-  const da = digitsOnly(a);
-  const db = digitsOnly(b);
-  if (!da || !db) return false;
-  // Son 10 hane (TR cep) veya tam eşleşme
-  if (da === db) return true;
-  const ta = da.length > 10 ? da.slice(-10) : da;
-  const tb = db.length > 10 ? db.slice(-10) : db;
-  return ta.length >= 10 && ta === tb;
-}
 export async function handleAuth(request: NextRequest): Promise<NextResponse> {
   const action = request.nextUrl.searchParams.get("action") ?? "";
   const db = getSupabaseAdmin();
@@ -137,14 +132,9 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     return clearSessionCookie(res);
   }
 
-  // Dükkan admini kendi şifresini unuttu: kullanıcı adı + firma telefonu ile doğrula
-  if (action === "forgot_password" && request.method === "POST") {
-    let body: {
-      username?: string;
-      phone?: string;
-      new_password?: string;
-      confirm_password?: string;
-    };
+  // 1) Kod iste — firma e-postasına 6 haneli kod
+  if (action === "forgot_password_request" && request.method === "POST") {
+    let body: { username?: string };
     try {
       body = await request.json();
     } catch {
@@ -152,18 +142,7 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     }
 
     const username = (body.username ?? "").trim();
-    const phone = (body.phone ?? "").trim();
-    const newPassword = body.new_password ?? "";
-    const confirmPassword = body.confirm_password ?? "";
-
-    if (!username || !phone || !newPassword) {
-      return jsonFail("Kullanıcı adı, telefon ve yeni şifre zorunludur.", 400);
-    }
-    if (newPassword !== confirmPassword) {
-      return jsonFail("Yeni şifreler eşleşmiyor.", 400);
-    }
-    const pwdErr = validatePassword(newPassword);
-    if (pwdErr) return jsonFail(pwdErr, 400);
+    if (!username) return jsonFail("Kullanıcı adı zorunludur.", 400);
 
     const { data: user } = await db
       .from(Tables.yoneticiKullanicilar)
@@ -174,17 +153,15 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
     if (!user || !user.aktif) {
       return jsonFail("Kullanıcı bulunamadı veya hesap pasif.", 404);
     }
-
     if (user.is_superadmin) {
       return jsonFail(
-        "Geliştirici hesabı bu form ile sıfırlanamaz. Veritabanı yöneticisine başvurun.",
+        "Geliştirici hesabı bu form ile sıfırlanamaz.",
         403
       );
     }
 
     const tenantId = Number(user.tenant_id ?? user.id);
-    const isOwner = tenantId === Number(user.id);
-    if (!isOwner) {
+    if (tenantId !== Number(user.id)) {
       return jsonFail(
         "Personel şifresi bu form ile sıfırlanamaz. Dükkan yöneticinizden Ayarlar → Personel → Şifre sıfırla isteyin.",
         403
@@ -193,23 +170,77 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
 
     const { data: shop } = await db
       .from(Tables.dukkanAyarlari)
-      .select("telefon")
+      .select("email, firma_adi")
       .eq("tenant_id", tenantId)
       .maybeSingle();
 
-    const shopPhone = (shop?.telefon ?? "").trim();
-    if (!shopPhone) {
+    const shopEmail = (shop?.email ?? "").trim().toLowerCase();
+    if (!shopEmail || !shopEmail.includes("@")) {
       return jsonFail(
-        "Firma profilinde telefon kayıtlı değil. Ayarlar → Firma Profili'ne telefon ekleyin (giriş yaptıktan sonra) veya geliştiriciye başvurun.",
+        "Firma profilinde e-posta kayıtlı değil. Ayarlar → Firma Profili'ne e-posta ekleyin.",
         400
       );
     }
 
-    if (!phonesMatch(phone, shopPhone)) {
-      return jsonFail(
-        "Telefon doğrulanamadı. Firma profilindeki telefon numarasını girin.",
-        403
-      );
+    const code = generateResetCode();
+    const codeHash = hashResetCode(code);
+    const resetToken = await signPasswordResetToken({
+      userId: user.id,
+      username: user.username,
+      codeHash,
+    });
+
+    const sent = await sendPasswordResetCodeEmail({
+      to: shopEmail,
+      code,
+      username: user.username,
+      firmaAdi: shop?.firma_adi,
+    });
+    if (!sent.ok) return jsonFail(sent.message, 502);
+
+    return jsonOk({
+      message: "Doğrulama kodu firma e-postasına gönderildi.",
+      data: {
+        resetToken,
+        emailHint: maskEmail(shopEmail),
+      },
+    });
+  }
+
+  // 2) Kod + yeni şifre
+  if (action === "forgot_password_confirm" && request.method === "POST") {
+    let body: {
+      resetToken?: string;
+      code?: string;
+      new_password?: string;
+      confirm_password?: string;
+    };
+    try {
+      body = await request.json();
+    } catch {
+      return jsonFail("Geçersiz istek.", 400);
+    }
+
+    const resetToken = (body.resetToken ?? "").trim();
+    const code = (body.code ?? "").trim();
+    const newPassword = body.new_password ?? "";
+    const confirmPassword = body.confirm_password ?? "";
+
+    if (!resetToken || !code || !newPassword) {
+      return jsonFail("Kod ve yeni şifre zorunludur.", 400);
+    }
+    if (newPassword !== confirmPassword) {
+      return jsonFail("Yeni şifreler eşleşmiyor.", 400);
+    }
+    const pwdErr = validatePassword(newPassword);
+    if (pwdErr) return jsonFail(pwdErr, 400);
+
+    const payload = await verifyPasswordResetToken(resetToken);
+    if (!payload) {
+      return jsonFail("Kod süresi dolmuş veya geçersiz. Yeni kod isteyin.", 400);
+    }
+    if (hashResetCode(code) !== payload.codeHash) {
+      return jsonFail("Doğrulama kodu hatalı.", 403);
     }
 
     const { error: updErr } = await db
@@ -218,11 +249,13 @@ export async function handleAuth(request: NextRequest): Promise<NextResponse> {
         password_hash: await hashPassword(newPassword),
         must_change_password: false,
       })
-      .eq("id", user.id);
+      .eq("id", payload.userId);
 
     if (updErr) return jsonFail("Şifre güncellenemedi.", 500);
 
-    return jsonOk({ message: "Şifreniz güncellendi. Yeni şifreyle giriş yapabilirsiniz." });
+    return jsonOk({
+      message: "Şifreniz güncellendi. Yeni şifreyle giriş yapabilirsiniz.",
+    });
   }
 
   return jsonFail("Geçersiz istek.", 405);
