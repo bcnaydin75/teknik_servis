@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useAdminTheme } from "@/components/AdminThemeProvider";
 import AdminShell from "./AdminShell";
@@ -25,6 +25,11 @@ import type { ShopSettings, StaffMember } from "@/types/settings";
 
 type Tab = "firma" | "personel" | "sifre" | "tema" | "dil";
 
+type Flash = {
+  key: string;
+  params?: Record<string, string | number>;
+};
+
 function validatePasswordT(
   password: string,
   t: (key: string) => string
@@ -42,9 +47,10 @@ export default function SettingsPage() {
   const [shop, setShop] = useState<ShopSettings | null>(null);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState<string | null>(null);
+  const [flash, setFlash] = useState<Flash | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savingLocale, setSavingLocale] = useState(false);
+  const flashRef = useRef<HTMLDivElement>(null);
 
   const [newStaff, setNewStaff] = useState({
     username: "",
@@ -59,6 +65,19 @@ export default function SettingsPage() {
   const [canManageStaff, setCanManageStaff] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const showFlash = useCallback((key: string, params?: Flash["params"]) => {
+    setError(null);
+    setFlash({ key, params });
+  }, []);
+
+  useEffect(() => {
+    if (!flash && !error) return;
+    const id = window.setTimeout(() => {
+      flashRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [flash, error]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -93,7 +112,7 @@ export default function SettingsPage() {
     setError(null);
     const res = await saveShopSettings(shop);
     if (res.success) {
-      setMessage(t("admin.settings.firma.saved"));
+      showFlash("admin.settings.firma.saved");
       window.dispatchEvent(new Event("site-locale-changed"));
     } else setError(res.message ?? t("admin.settings.firma.saveFailed"));
   }
@@ -104,7 +123,7 @@ export default function SettingsPage() {
     const res = await uploadLogo(file);
     if (res.success && res.data) {
       setShop(res.data);
-      setMessage(t("admin.settings.firma.logoUploaded"));
+      showFlash("admin.settings.firma.logoUploaded");
     } else setError(res.message ?? t("admin.settings.firma.logoFailed"));
   }
 
@@ -125,10 +144,10 @@ export default function SettingsPage() {
       firma_adi: isSuperadmin ? newStaff.firma_adi.trim() : undefined,
     });
     if (res.success) {
-      setMessage(
+      showFlash(
         isSuperadmin
-          ? t("admin.settings.personel.shopAdminAdded")
-          : t("admin.settings.personel.staffAdded")
+          ? "admin.settings.personel.shopAdminAdded"
+          : "admin.settings.personel.staffAdded"
       );
       setNewStaff({
         username: "",
@@ -162,7 +181,7 @@ export default function SettingsPage() {
       password: trimmed,
     });
     if (res.success) {
-      setMessage(t("admin.settings.personel.passwordReset", { username: s.username }));
+      showFlash("admin.settings.personel.passwordReset", { username: s.username });
     } else {
       setError(res.message ?? t("admin.settings.personel.resetFailed"));
     }
@@ -176,7 +195,7 @@ export default function SettingsPage() {
     if (pwdErr) { setError(pwdErr); return; }
     const res = await changePassword(pwdForm.old, pwdForm.new);
     if (res.success) {
-      setMessage(t("admin.settings.sifre.changed"));
+      showFlash("admin.settings.sifre.changed");
       setPwdForm({ old: "", new: "", confirm: "" });
       window.dispatchEvent(new Event("admin-password-changed"));
     } else setError(res.message ?? t("admin.settings.sifre.changeFailed"));
@@ -191,7 +210,8 @@ export default function SettingsPage() {
     if (!shop || isSuperadmin) {
       setLocale(nextLocale);
       setSavingLocale(false);
-      setMessage(t("admin.settings.dil.saved"));
+      // key saklanır; render yeni dilin t() ile yapılır
+      setFlash({ key: "admin.settings.dil.saved" });
       return;
     }
 
@@ -201,7 +221,7 @@ export default function SettingsPage() {
     if (res.success) {
       setShop(updated);
       setLocale(nextLocale);
-      setMessage(t("admin.settings.dil.saved"));
+      setFlash({ key: "admin.settings.dil.saved" });
     } else {
       setError(res.message ?? t("admin.settings.dil.saveFailed"));
     }
@@ -215,7 +235,7 @@ export default function SettingsPage() {
     setDeleting(false);
     setDeleteTarget(null);
     if (res.success) {
-      setMessage(t("admin.settings.personel.staffDeleted", { username: deleteTarget.username }));
+      showFlash("admin.settings.personel.staffDeleted", { username: deleteTarget.username });
       load();
     } else {
       setError(res.message ?? t("admin.settings.personel.deleteFailed"));
@@ -258,7 +278,7 @@ export default function SettingsPage() {
           <button
             key={tabItem.id}
             type="button"
-            onClick={() => { setTab(tabItem.id); setError(null); setMessage(null); }}
+            onClick={() => { setTab(tabItem.id); setError(null); setFlash(null); }}
             className={`shrink-0 rounded-xl px-4 py-2.5 text-sm font-medium transition touch-manipulation ${
               tab === tabItem.id
                 ? "bg-blue-600 text-white shadow-sm"
@@ -270,8 +290,20 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {message && <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{message}</div>}
-      {error && <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300">{error}</div>}
+      {(flash || error) && (
+        <div ref={flashRef} className="scroll-mt-20 mb-4 space-y-2">
+          {flash && (
+            <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+              {t(flash.key, flash.params)}
+            </div>
+          )}
+          {error && (
+            <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-300">
+              {error}
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-slate-500 dark:text-slate-400">{t("common.loading")}</p>
