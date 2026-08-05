@@ -35,7 +35,7 @@ export default function AdminMobileNav({ onOpenMenu }: AdminMobileNavProps) {
 
   return (
     <nav
-      className="z-30 shrink-0 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/95 lg:hidden"
+      className="admin-mobile-nav z-30 shrink-0 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/95 lg:hidden"
       aria-label={t("nav.menu")}
     >
       <div className="mx-auto flex max-w-lg items-stretch justify-around">

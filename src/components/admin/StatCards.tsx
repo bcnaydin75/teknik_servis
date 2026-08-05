@@ -90,37 +90,80 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
             key={card.key}
             className="relative isolate rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
-                  {t(card.labelKey)}
-                </p>
+            {card.currency ? (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 flex-1 text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
+                    {t(card.labelKey)}
+                  </p>
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}
+                  >
+                    <svg
+                      className={`h-4 w-4 sm:h-6 sm:w-6 ${card.text}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={card.icon}
+                      />
+                    </svg>
+                  </span>
+                </div>
                 <p
-                  className={`mt-1 font-bold tabular-nums tracking-tight text-slate-900 dark:text-white ${
-                    card.currency
-                      ? "truncate text-lg sm:text-2xl lg:text-3xl"
-                      : "text-2xl sm:mt-2 sm:text-3xl"
-                  }`}
+                  className="mt-2 break-words text-[clamp(1rem,4.2vw,1.75rem)] font-bold leading-tight tabular-nums tracking-tight text-slate-900 dark:text-white"
                   title={displayValue}
                 >
                   {displayValue}
                 </p>
-                <p className="mt-0.5 hidden text-xs text-slate-400 sm:block dark:text-slate-500">
-                  {t(card.subKey)}
-                </p>
-                {card.key === "pos_cirosu_bugun" && stats.pos_satis_sayisi_bugun > 0 && (
+                {stats.pos_satis_sayisi_bugun > 0 && (
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {t("common.salesCount", { count: stats.pos_satis_sayisi_bugun })}
                   </p>
                 )}
+                <p className="mt-0.5 hidden text-xs text-slate-400 sm:block dark:text-slate-500">
+                  {t(card.subKey)}
+                </p>
+              </>
+            ) : (
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
+                    {t(card.labelKey)}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 sm:mt-2 sm:text-3xl dark:text-white">
+                    {displayValue}
+                  </p>
+                  <p className="mt-0.5 hidden text-xs text-slate-400 sm:block dark:text-slate-500">
+                    {t(card.subKey)}
+                  </p>
+                </div>
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}
+                >
+                  <svg
+                    className={`h-5 w-5 sm:h-6 sm:w-6 ${card.text}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={card.icon}
+                    />
+                  </svg>
+                </span>
               </div>
-              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}>
-                <svg className={`h-5 w-5 sm:h-6 sm:w-6 ${card.text}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={card.icon} />
-                </svg>
-              </span>
-            </div>
-            <div className={`pointer-events-none absolute inset-x-0 bottom-0 h-1 overflow-hidden rounded-b-2xl bg-gradient-to-r ${card.color}`} />
+            )}
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-0 h-1 overflow-hidden rounded-b-2xl bg-gradient-to-r ${card.color}`}
+            />
           </div>
         );
       })}

@@ -116,17 +116,19 @@ function DeviceMobileCards(props: DeviceTableProps) {
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
+            <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
               <p className="text-slate-400">{t("admin.deviceTable.device")}</p>
-              <p className="mt-0.5 font-medium text-slate-800 dark:text-slate-200">{device.cihaz_modeli}</p>
-            </div>
-            {showCosts && (
-            <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
-              <p className="text-slate-400">{t("admin.deviceTable.total")}</p>
-              <p className="mt-0.5 font-semibold text-slate-900 dark:text-white">
-                {formatCurrency(device.toplam_ucret, locale)}
+              <p className="mt-0.5 break-words font-medium text-slate-800 dark:text-slate-200">
+                {device.cihaz_modeli}
               </p>
             </div>
+            {showCosts && (
+              <div className="min-w-0 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
+                <p className="text-slate-400">{t("admin.deviceTable.total")}</p>
+                <p className="mt-0.5 break-words text-[13px] font-semibold leading-snug tabular-nums text-slate-900 dark:text-white">
+                  {formatCurrency(device.toplam_ucret, locale)}
+                </p>
+              </div>
             )}
           </div>
 

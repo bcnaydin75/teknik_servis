@@ -40,23 +40,31 @@ export default function AdminShell({
     };
   }, [menuOpen]);
 
-  // iOS/PWA: fixed bottom bazen ortada kalır; flex footer + gerçek viewport yüksekliği daha stabil
+  // Layout viewport yüksekliği — visualViewport kullanma (klavye navbar'ı yukarı iter)
   useEffect(() => {
     const setAppHeight = () => {
-      const h =
-        window.visualViewport?.height ??
-        window.innerHeight ??
-        document.documentElement.clientHeight;
+      const h = window.innerHeight || document.documentElement.clientHeight;
       document.documentElement.style.setProperty("--app-height", `${Math.round(h)}px`);
     };
+
+    const syncKeyboard = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      // Klavye açıkken alt menüyü gizle (üstte asılı kalmasın)
+      const open = window.innerHeight - vv.height > 120;
+      document.documentElement.classList.toggle("admin-keyboard-open", open);
+    };
+
     setAppHeight();
+    syncKeyboard();
     window.addEventListener("resize", setAppHeight);
-    window.visualViewport?.addEventListener("resize", setAppHeight);
-    window.visualViewport?.addEventListener("scroll", setAppHeight);
+    window.visualViewport?.addEventListener("resize", syncKeyboard);
+    window.visualViewport?.addEventListener("scroll", syncKeyboard);
     return () => {
       window.removeEventListener("resize", setAppHeight);
-      window.visualViewport?.removeEventListener("resize", setAppHeight);
-      window.visualViewport?.removeEventListener("scroll", setAppHeight);
+      window.visualViewport?.removeEventListener("resize", syncKeyboard);
+      window.visualViewport?.removeEventListener("scroll", syncKeyboard);
+      document.documentElement.classList.remove("admin-keyboard-open");
     };
   }, []);
 
