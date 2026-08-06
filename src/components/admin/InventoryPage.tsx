@@ -46,6 +46,8 @@ export default function InventoryPage() {
   const [buyDisplay, setBuyDisplay] = useState("");
   const [sellDisplay, setSellDisplay] = useState("");
   const [qtyDisplay, setQtyDisplay] = useState("");
+  /** Düzenlemede: yazılan adet kadar artır veya azalt */
+  const [qtyAdjustMode, setQtyAdjustMode] = useState<"increase" | "decrease">("increase");
   const formRef = useRef<HTMLFormElement>(null);
 
   const closeForm = useCallback(() => {
@@ -55,6 +57,7 @@ export default function InventoryPage() {
     setBuyDisplay("");
     setSellDisplay("");
     setQtyDisplay("");
+    setQtyAdjustMode("increase");
   }, [saving]);
 
   useModalHotkeys({
@@ -106,6 +109,7 @@ export default function InventoryPage() {
     setBuyDisplay("");
     setSellDisplay("");
     setQtyDisplay("");
+    setQtyAdjustMode("increase");
     setShowForm(true);
   }
 
@@ -113,15 +117,35 @@ export default function InventoryPage() {
     setEditing(item);
     setBuyDisplay(item.buy_price ? formatMoneyInput(item.buy_price) : "");
     setSellDisplay(item.sell_price ? formatMoneyInput(item.sell_price) : "");
-    setQtyDisplay(item.stock_quantity > 0 ? String(item.stock_quantity) : "");
+    setQtyDisplay("");
+    setQtyAdjustMode("increase");
     setShowForm(true);
   }
+
+  const adjustQty = parseInt(qtyDisplay.replace(/\D/g, "") || "0", 10) || 0;
+  const previewStock = editing
+    ? Math.max(
+        0,
+        qtyAdjustMode === "increase"
+          ? editing.stock_quantity + adjustQty
+          : editing.stock_quantity - adjustQty
+      )
+    : adjustQty;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
 
     const form = new FormData(e.currentTarget);
+    const delta = parseInt(qtyDisplay.replace(/\D/g, "") || "0", 10) || 0;
+    const stock_quantity = editing
+      ? Math.max(
+          0,
+          qtyAdjustMode === "increase"
+            ? editing.stock_quantity + delta
+            : editing.stock_quantity - delta
+        )
+      : delta;
 
     try {
       const response = await saveInventoryItem({
@@ -130,7 +154,7 @@ export default function InventoryPage() {
         part_name: String(form.get("part_name") ?? "").trim(),
         buy_price: showCosts ? parseMoneyInput(buyDisplay) : editing?.buy_price ?? 0,
         sell_price: parseMoneyInput(sellDisplay),
-        stock_quantity: parseInt(qtyDisplay.replace(/\D/g, "") || "0", 10) || 0,
+        stock_quantity,
         supplier_id: form.get("supplier_id") ? parseInt(String(form.get("supplier_id")), 10) : null,
       });
 
@@ -380,8 +404,41 @@ export default function InventoryPage() {
 
                 <div>
                   <label htmlFor="stock_quantity" className={modalLabelClass}>
-                    {t("admin.inventory.quantity")}
+                    {editing ? t("admin.inventory.adjustQuantity") : t("admin.inventory.quantity")}
                   </label>
+                  {editing && (
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      {t("admin.inventory.currentStock", { count: editing.stock_quantity })}
+                    </p>
+                  )}
+                  {editing && (
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => setQtyAdjustMode("increase")}
+                        className={`min-h-11 rounded-xl text-sm font-semibold touch-manipulation transition ${
+                          qtyAdjustMode === "increase"
+                            ? "bg-emerald-600 text-white"
+                            : "border border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                        }`}
+                      >
+                        {t("admin.inventory.increaseStock")}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={() => setQtyAdjustMode("decrease")}
+                        className={`min-h-11 rounded-xl text-sm font-semibold touch-manipulation transition ${
+                          qtyAdjustMode === "decrease"
+                            ? "bg-red-600 text-white"
+                            : "border border-slate-200 bg-white text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+                        }`}
+                      >
+                        {t("admin.inventory.decreaseStock")}
+                      </button>
+                    </div>
+                  )}
                   <input
                     id="stock_quantity"
                     name="stock_quantity"
@@ -398,8 +455,18 @@ export default function InventoryPage() {
                       setQtyDisplay(digits);
                     }}
                     onBlur={(e) => stripLeadingZeros(e.currentTarget)}
-                    className={`mt-1.5 ${modalInputClass}`}
+                    className={`mt-2 ${modalInputClass}`}
                   />
+                  {editing && (
+                    <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {t("admin.inventory.stockAfterAdjust", {
+                        current: editing.stock_quantity,
+                        delta: adjustQty,
+                        sign: qtyAdjustMode === "increase" ? "+" : "−",
+                        next: previewStock,
+                      })}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
