@@ -44,7 +44,7 @@ export default function LoadingSpinner({
         />
       </svg>
       {label ? (
-        <p className="text-sm text-slate-400">{label}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
       ) : null}
     </div>
   );

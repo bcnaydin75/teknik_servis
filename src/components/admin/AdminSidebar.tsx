@@ -59,7 +59,9 @@ export default function AdminSidebar({
   }
 
   function handleLogoutClick() {
-    setLogoutOpen(true);
+    onMobileClose?.();
+    // Drawer kapansın, sonra diyalog önde açılsın
+    window.setTimeout(() => setLogoutOpen(true), 0);
   }
 
   function handleNavClick() {
