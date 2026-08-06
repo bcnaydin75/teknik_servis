@@ -30,6 +30,10 @@ export default function CurrencyAmountInput({
         inputMode="decimal"
         autoComplete="off"
         value={value}
+        onFocus={(e) => {
+          rest.onFocus?.(e);
+          e.currentTarget.select();
+        }}
         onChange={(e) => {
           const next = formatMoneyInput(e.target.value);
           onValueChange(next, parseMoneyInput(next));

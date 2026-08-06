@@ -80,6 +80,9 @@ html.admin-drawer-open .admin-fab,
 html.admin-modal-open .admin-mobile-nav,
 html.admin-modal-open .admin-fab {
   display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 button:not(:disabled),

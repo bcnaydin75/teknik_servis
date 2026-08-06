@@ -43,14 +43,21 @@ export default function AdminShell({
     };
   }, [menuOpen]);
 
-  // Klavye açıkken fixed alt menüyü gizle (yukarı zıplamasın)
+  // Klavye / input odakta fixed alt menüyü gizle (iOS yukarı zıplatmasın)
   useEffect(() => {
+    const isField = (el: EventTarget | null) => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+    };
+
     const syncKeyboard = () => {
       const vv = window.visualViewport;
-      if (!vv) return;
-      const open = Math.max(0, window.innerHeight - vv.height) > 120;
-      document.documentElement.classList.toggle("admin-keyboard-open", open);
+      const byViewport = vv ? Math.max(0, window.innerHeight - vv.height) > 80 : false;
+      const byFocus = isField(document.activeElement);
+      document.documentElement.classList.toggle("admin-keyboard-open", byViewport || byFocus);
     };
+
     syncKeyboard();
     window.visualViewport?.addEventListener("resize", syncKeyboard);
     window.visualViewport?.addEventListener("scroll", syncKeyboard);
