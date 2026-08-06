@@ -50,6 +50,18 @@ function getServerSystemSnapshot(): "light" | "dark" {
   return "dark";
 }
 
+function applyDocumentTheme(isDark: boolean) {
+  const c = isDark ? "#0f172a" : "#f8fafc";
+  const root = document.documentElement;
+  root.style.backgroundColor = c;
+  root.style.colorScheme = isDark ? "dark" : "light";
+  root.classList.toggle("admin-dark", isDark);
+  root.classList.toggle("admin-boot-light", !isDark);
+  document.body.style.backgroundColor = c;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", c);
+}
+
 export function AdminThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<AdminTheme>("dark");
   const [hydrated, setHydrated] = useState(false);
@@ -60,26 +72,17 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
   );
 
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      setThemeState(readStoredTheme());
-      setHydrated(true);
-    }, 0);
-    return () => window.clearTimeout(id);
+    setThemeState(readStoredTheme());
+    setHydrated(true);
   }, []);
 
   const resolvedTheme: "light" | "dark" =
     theme === "system" ? systemPref : theme;
 
   useEffect(() => {
-    if (!hydrated) return;
-    const isDark = resolvedTheme === "dark";
-    document.documentElement.style.backgroundColor = isDark ? "#0f172a" : "#f8fafc";
-    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
-    document.body.style.backgroundColor = isDark ? "#0f172a" : "#f8fafc";
-    // PWA status bar / theme-color
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", isDark ? "#0f172a" : "#f8fafc");
-  }, [hydrated, resolvedTheme]);
+    // Hydration öncesi de koyu varsayılanı koru; light seçiliyse hemen uygula
+    applyDocumentTheme(resolvedTheme === "dark");
+  }, [resolvedTheme, hydrated]);
 
   const setTheme = useCallback((next: AdminTheme) => {
     try {
@@ -98,6 +101,7 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
   return (
     <AdminThemeContext.Provider value={value}>
       <div
+        suppressHydrationWarning
         className={
           resolvedTheme === "dark"
             ? "admin-dark min-h-dvh bg-slate-950 text-slate-100"

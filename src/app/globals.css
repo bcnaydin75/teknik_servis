@@ -4,8 +4,9 @@
 @custom-variant dark (&:where(.admin-dark, .admin-dark *));
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Varsayılan koyu — ilk boyamada beyaz flash olmasın (admin PWA) */
+  --background: #0f172a;
+  --foreground: #f1f5f9;
   /* JS (AdminShell) günceller; fallback 100dvh */
   --app-height: 100dvh;
 }
@@ -15,6 +16,7 @@ html {
   min-height: var(--app-height);
   -webkit-text-size-adjust: 100%;
   background-color: #0f172a;
+  color-scheme: dark;
 }
 
 body {
@@ -27,6 +29,15 @@ body {
 .admin-dark {
   --background: #020617;
   --foreground: #f1f5f9;
+  color-scheme: dark;
+}
+
+/* Açık tema (boot script / AdminThemeProvider) */
+html.admin-boot-light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  background-color: #f8fafc;
+  color-scheme: light;
 }
 
 /* Müşteri sayfası her zaman açık tema */

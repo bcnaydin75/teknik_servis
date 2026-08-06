@@ -6,11 +6,13 @@ import "./globals.css";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -37,13 +39,50 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon.png", sizes: "32x32", type: "image/png" },
       { url: "/favicon.png", sizes: "16x16", type: "image/png" },
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: "/favicon.png",
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
+
+/**
+ * İlk boyamadan önce çalışır — admin'de beyaz flash'ı keser.
+ * Müşteri sayfasında açık tema; admin'de localStorage / varsayılan koyu.
+ */
+const themeBootScript = `
+(function(){
+  try {
+    var p=location.pathname||'';
+    var isAdmin=p.indexOf('/admin')===0;
+    var dark=true;
+    var c='#0f172a';
+    if(!isAdmin){
+      dark=false;
+      c='#f8fafc';
+    } else {
+      var t=localStorage.getItem('teknik-servis-admin-theme')||'dark';
+      dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+      c=dark?'#0f172a':'#f8fafc';
+    }
+    var root=document.documentElement;
+    root.style.backgroundColor=c;
+    root.style.colorScheme=dark?'dark':'light';
+    root.classList.toggle('admin-dark', isAdmin && dark);
+    root.classList.toggle('admin-boot-light', !dark);
+    var meta=document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute('content', c);
+    function paintBody(){
+      if(document.body){
+        document.body.style.backgroundColor=c;
+      }
+    }
+    paintBody();
+    if(!document.body) document.addEventListener('DOMContentLoaded', paintBody);
+  } catch(e) {
+    document.documentElement.style.backgroundColor='#0f172a';
+  }
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -53,6 +92,7 @@ export default function RootLayout({
   return (
     <html
       lang="tr"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
@@ -62,8 +102,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
-      <body className="flex min-h-dvh flex-col font-sans">
+      <body
+        suppressHydrationWarning
+        className="flex min-h-dvh flex-col font-sans"
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
