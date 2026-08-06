@@ -84,77 +84,54 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
         const displayValue = card.currency
           ? formatCurrencyCompact(value, locale)
           : card.format!(value);
+        const salesHint =
+          card.key === "pos_cirosu_bugun" && stats.pos_satis_sayisi_bugun > 0
+            ? t("common.salesCount", { count: stats.pos_satis_sayisi_bugun })
+            : null;
 
         return (
           <div
             key={card.key}
             className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
           >
-            {card.currency ? (
-              <div className="pb-1">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-medium leading-snug text-slate-500 sm:text-sm dark:text-slate-400">
-                    {t(card.labelKey)}
-                  </p>
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${card.bg} dark:bg-slate-700/80`}
-                  >
-                    <svg
-                      className={`h-4 w-4 sm:h-5 sm:w-5 ${card.text}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d={card.icon}
-                      />
-                    </svg>
-                  </span>
-                </div>
-                <p
-                  className="mt-2 w-full text-xl font-bold leading-none tracking-tight text-slate-900 sm:text-2xl dark:text-white"
-                  title={displayValue}
+            <div className="flex h-full min-h-[5.75rem] flex-col pb-1">
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-h-[2.5rem] flex-1 text-xs font-medium leading-snug text-slate-500 sm:min-h-[1.25rem] sm:text-sm dark:text-slate-400">
+                  {t(card.labelKey)}
+                </p>
+                <span
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}
                 >
-                  {displayValue}
-                </p>
-                {stats.pos_satis_sayisi_bugun > 0 && (
-                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
-                    {t("common.salesCount", { count: stats.pos_satis_sayisi_bugun })}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="flex h-full min-h-[5.5rem] flex-col pb-1">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="min-h-[2.5rem] flex-1 text-xs font-medium leading-snug text-slate-500 sm:min-h-0 sm:text-sm dark:text-slate-400">
-                    {t(card.labelKey)}
-                  </p>
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}
+                  <svg
+                    className={`h-5 w-5 sm:h-6 sm:w-6 ${card.text}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <svg
-                      className={`h-5 w-5 sm:h-6 sm:w-6 ${card.text}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d={card.icon}
-                      />
-                    </svg>
-                  </span>
-                </div>
-                <p className="mt-auto pt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-3xl dark:text-white">
-                  {displayValue}
-                </p>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={card.icon}
+                    />
+                  </svg>
+                </span>
               </div>
-            )}
+              <p
+                className={`mt-auto pt-1 font-bold tabular-nums tracking-tight text-slate-900 dark:text-white ${
+                  card.currency
+                    ? "text-xl leading-none sm:text-2xl"
+                    : "text-2xl sm:text-3xl"
+                }`}
+                title={displayValue}
+              >
+                {displayValue}
+              </p>
+              {/* Sabit yükseklik: satış ipucu yoksa da rakam hizası bozulmasın */}
+              <p className="mt-1 min-h-[1rem] text-xs text-slate-500 dark:text-slate-400">
+                {salesHint ?? "\u00A0"}
+              </p>
+            </div>
             <div
               className={`pointer-events-none absolute inset-x-0 bottom-0 h-1 rounded-b-2xl bg-gradient-to-r ${card.color}`}
             />
