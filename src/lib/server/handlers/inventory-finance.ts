@@ -78,8 +78,15 @@ export async function handleInventory(request: NextRequest): Promise<NextRespons
       existingQuery = applyTenantFilter(existingQuery, scope);
       const { data: existing } = await existingQuery.maybeSingle();
 
+      if (existing && payload.stock_quantity < 0) {
+        return jsonFail("Stok eksiye düşemez.", 400);
+      }
+
       const { error } = await withScopedId(
-        db.from(Tables.stok).update(payload),
+        db.from(Tables.stok).update({
+          ...payload,
+          stock_quantity: Math.max(0, payload.stock_quantity),
+        }),
         scope,
         id
       );

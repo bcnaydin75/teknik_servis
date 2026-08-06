@@ -482,6 +482,7 @@ export const messages = {
       increaseStock: "Increase (+)",
       decreaseStock: "Decrease (−)",
       stockAfterAdjust: "{current} {sign} {delta} = {next}",
+      insufficientStock: "Not enough stock. Available: {current}, requested: {requested}.",
       supplierHint: "Adding stock automatically creates supplier payable",
       noSupplier: "No supplier selected",
       updated: "Stock updated.",

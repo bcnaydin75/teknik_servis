@@ -123,13 +123,12 @@ export default function InventoryPage() {
   }
 
   const adjustQty = parseInt(qtyDisplay.replace(/\D/g, "") || "0", 10) || 0;
+  const decreaseTooMuch =
+    Boolean(editing) && qtyAdjustMode === "decrease" && adjustQty > (editing?.stock_quantity ?? 0);
   const previewStock = editing
-    ? Math.max(
-        0,
-        qtyAdjustMode === "increase"
-          ? editing.stock_quantity + adjustQty
-          : editing.stock_quantity - adjustQty
-      )
+    ? qtyAdjustMode === "increase"
+      ? editing.stock_quantity + adjustQty
+      : Math.max(0, editing.stock_quantity - adjustQty)
     : adjustQty;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -138,13 +137,22 @@ export default function InventoryPage() {
 
     const form = new FormData(e.currentTarget);
     const delta = parseInt(qtyDisplay.replace(/\D/g, "") || "0", 10) || 0;
+
+    if (editing && qtyAdjustMode === "decrease" && delta > editing.stock_quantity) {
+      setToast(
+        t("admin.inventory.insufficientStock", {
+          current: editing.stock_quantity,
+          requested: delta,
+        })
+      );
+      setSaving(false);
+      return;
+    }
+
     const stock_quantity = editing
-      ? Math.max(
-          0,
-          qtyAdjustMode === "increase"
-            ? editing.stock_quantity + delta
-            : editing.stock_quantity - delta
-        )
+      ? qtyAdjustMode === "increase"
+        ? editing.stock_quantity + delta
+        : editing.stock_quantity - delta
       : delta;
 
     try {
@@ -154,7 +162,7 @@ export default function InventoryPage() {
         part_name: String(form.get("part_name") ?? "").trim(),
         buy_price: showCosts ? parseMoneyInput(buyDisplay) : editing?.buy_price ?? 0,
         sell_price: parseMoneyInput(sellDisplay),
-        stock_quantity,
+        stock_quantity: Math.max(0, stock_quantity),
         supplier_id: form.get("supplier_id") ? parseInt(String(form.get("supplier_id")), 10) : null,
       });
 
@@ -227,84 +235,155 @@ export default function InventoryPage() {
         )}
 
         {!loading && !error && (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/80">
-                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
-                      {t("admin.inventory.partName")}
-                    </th>
-                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
-                      {t("admin.inventory.supplier")}
-                    </th>
-                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
-                      {t("admin.inventory.quantity")}
-                    </th>
-                    {showCosts && (
-                      <>
-                        <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
-                          {t("admin.inventory.costCurrency")}
-                        </th>
-                        <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
-                          {t("admin.inventory.sellCurrency")}
-                        </th>
-                      </>
-                    )}
-                    <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
-                  {items.map((item) => {
-                    const lowStock = item.stock_quantity <= 3;
-                    return (
-                      <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-900/50">
-                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
-                          {item.part_name}
-                        </td>
-                        <td className="px-6 py-4 text-slate-700 dark:text-white">
-                          {item.supplier_name ?? t("common.dash")}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={
-                              lowStock
-                                ? "font-semibold text-amber-600 dark:text-amber-400"
-                                : "text-slate-700 dark:text-slate-200"
-                            }
-                          >
-                            {t("common.pieces", { count: item.stock_quantity })}
-                          </span>
-                        </td>
-                        {showCosts && (
-                          <>
-                            <td className="px-6 py-4 text-slate-700 dark:text-slate-200">
+          <>
+            {/* Mobil kart listesi */}
+            <div className="space-y-3 lg:hidden">
+              {items.length === 0 ? (
+                <div className="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center dark:border-slate-700 dark:bg-slate-800">
+                  <p className="text-sm text-slate-400">{t("admin.inventory.emptyAddHint")}</p>
+                </div>
+              ) : (
+                items.map((item) => {
+                  const lowStock = item.stock_quantity <= 3;
+                  return (
+                    <article
+                      key={item.id}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="break-words text-base font-semibold text-slate-900 dark:text-white">
+                            {item.part_name}
+                          </h3>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {item.supplier_name ?? t("admin.inventory.noSupplier")}
+                          </p>
+                        </div>
+                        <span
+                          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${
+                            lowStock
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+                              : "bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                          }`}
+                        >
+                          {t("common.pieces", { count: item.stock_quantity })}
+                        </span>
+                      </div>
+
+                      {showCosts && (
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
+                            <p className="text-slate-400">{t("admin.inventory.cost")}</p>
+                            <p className="mt-0.5 font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                               {formatCurrency(item.buy_price ?? 0, locale)}
-                            </td>
-                            <td className="px-6 py-4 text-slate-700 dark:text-slate-200">
+                            </p>
+                          </div>
+                          <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-900/60">
+                            <p className="text-slate-400">{t("admin.inventory.sellPrice")}</p>
+                            <p className="mt-0.5 font-semibold tabular-nums text-slate-800 dark:text-slate-100">
                               {formatCurrency(item.sell_price ?? 0, locale)}
-                            </td>
-                          </>
-                        )}
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => openEditForm(item)}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
-                          >
-                            {t("common.edit")}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700">
+                        <button
+                          type="button"
+                          onClick={() => openEditForm(item)}
+                          className="flex min-h-10 w-full items-center justify-center rounded-xl bg-slate-100 text-sm font-semibold text-slate-700 touch-manipulation active:bg-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:active:bg-slate-600"
+                        >
+                          {t("common.edit")}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
             </div>
-            {items.length === 0 && (
-              <p className="px-6 py-10 text-center text-sm text-slate-400">{t("admin.inventory.emptyAddHint")}</p>
-            )}
-          </div>
+
+            {/* Masaüstü tablo */}
+            <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:block dark:border-slate-700 dark:bg-slate-800">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[800px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/80">
+                      <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                        {t("admin.inventory.partName")}
+                      </th>
+                      <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                        {t("admin.inventory.supplier")}
+                      </th>
+                      <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                        {t("admin.inventory.quantity")}
+                      </th>
+                      {showCosts && (
+                        <>
+                          <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                            {t("admin.inventory.costCurrency")}
+                          </th>
+                          <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300">
+                            {t("admin.inventory.sellCurrency")}
+                          </th>
+                        </>
+                      )}
+                      <th className="px-6 py-4 font-semibold text-slate-600 dark:text-slate-300" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 dark:divide-slate-700">
+                    {items.map((item) => {
+                      const lowStock = item.stock_quantity <= 3;
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-900/50">
+                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                            {item.part_name}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700 dark:text-white">
+                            {item.supplier_name ?? t("common.dash")}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={
+                                lowStock
+                                  ? "font-semibold text-amber-600 dark:text-amber-400"
+                                  : "text-slate-700 dark:text-slate-200"
+                              }
+                            >
+                              {t("common.pieces", { count: item.stock_quantity })}
+                            </span>
+                          </td>
+                          {showCosts && (
+                            <>
+                              <td className="px-6 py-4 text-slate-700 dark:text-slate-200">
+                                {formatCurrency(item.buy_price ?? 0, locale)}
+                              </td>
+                              <td className="px-6 py-4 text-slate-700 dark:text-slate-200">
+                                {formatCurrency(item.sell_price ?? 0, locale)}
+                              </td>
+                            </>
+                          )}
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openEditForm(item)}
+                              className="text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                            >
+                              {t("common.edit")}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {items.length === 0 && (
+                <p className="px-6 py-10 text-center text-sm text-slate-400">
+                  {t("admin.inventory.emptyAddHint")}
+                </p>
+              )}
+            </div>
+          </>
         )}
       </AdminShell>
 
@@ -428,7 +507,16 @@ export default function InventoryPage() {
                       <button
                         type="button"
                         disabled={saving}
-                        onClick={() => setQtyAdjustMode("decrease")}
+                        onClick={() => {
+                          setQtyAdjustMode("decrease");
+                          setQtyDisplay((prev) => {
+                            if (!editing) return prev;
+                            const n = parseInt(prev || "0", 10) || 0;
+                            return n > editing.stock_quantity
+                              ? String(editing.stock_quantity)
+                              : prev;
+                          });
+                        }}
                         className={`min-h-11 rounded-xl text-sm font-semibold touch-manipulation transition ${
                           qtyAdjustMode === "decrease"
                             ? "bg-red-600 text-white"
@@ -451,13 +539,30 @@ export default function InventoryPage() {
                     disabled={saving}
                     onFocus={(e) => e.currentTarget.select()}
                     onChange={(e) => {
-                      const digits = e.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+                      let digits = e.target.value.replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+                      // Azaltırken mevcut stoktan fazla yazılamasın
+                      if (editing && qtyAdjustMode === "decrease") {
+                        const n = parseInt(digits || "0", 10) || 0;
+                        if (n > editing.stock_quantity) {
+                          digits = String(editing.stock_quantity);
+                        }
+                      }
                       setQtyDisplay(digits);
                     }}
                     onBlur={(e) => stripLeadingZeros(e.currentTarget)}
-                    className={`mt-2 ${modalInputClass}`}
+                    className={`mt-2 ${modalInputClass} ${
+                      decreaseTooMuch ? "border-red-400 ring-2 ring-red-400/30" : ""
+                    }`}
                   />
-                  {editing && (
+                  {editing && decreaseTooMuch && (
+                    <p className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400">
+                      {t("admin.inventory.insufficientStock", {
+                        current: editing.stock_quantity,
+                        requested: adjustQty,
+                      })}
+                    </p>
+                  )}
+                  {editing && !decreaseTooMuch && (
                     <p className="mt-2 text-sm font-medium text-slate-700 dark:text-slate-200">
                       {t("admin.inventory.stockAfterAdjust", {
                         current: editing.stock_quantity,
@@ -475,7 +580,11 @@ export default function InventoryPage() {
               <button type="button" onClick={closeForm} disabled={saving} className={modalSecondaryBtnClass}>
                 {t("common.cancel")}
               </button>
-              <button type="submit" disabled={saving} className={modalPrimaryBtnClass}>
+              <button
+                type="submit"
+                disabled={saving || decreaseTooMuch}
+                className={modalPrimaryBtnClass}
+              >
                 {saving ? t("common.saving") : t("common.save")}
               </button>
             </div>

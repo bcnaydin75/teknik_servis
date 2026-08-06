@@ -473,6 +473,7 @@ export const messages = {
       increaseStock: "Увеличить (+)",
       decreaseStock: "Уменьшить (−)",
       stockAfterAdjust: "{current} {sign} {delta} = {next} шт",
+      insufficientStock: "Недостаточно на складе. Есть: {current}, нужно списать: {requested}.",
       supplierHint: "Добавление на склад автоматически создаёт задолженность поставщику",
       noSupplier: "Поставщик не выбран",
       updated: "Склад обновлён.",

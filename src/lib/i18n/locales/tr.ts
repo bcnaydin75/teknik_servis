@@ -500,6 +500,7 @@ export const messages = {
       increaseStock: "Artır (+)",
       decreaseStock: "Azalt (−)",
       stockAfterAdjust: "{current} {sign} {delta} = {next} adet",
+      insufficientStock: "Yetersiz stok. Mevcut: {current} adet, düşülmek istenen: {requested}.",
       supplierHint: "Tedarikçi seçilirse adet × maliyet otomatik borç yazılır",
       noSupplier: "Tedarikçi seçilmedi",
       updated: "Stok güncellendi.",
