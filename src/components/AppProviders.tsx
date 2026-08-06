@@ -1,9 +1,10 @@
 "use client";
 
-import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
+import { useEffect } from "react";
+import AppBootSplash from "@/components/AppBootSplash";
 import MetaUpdater from "@/components/MetaUpdater";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
-import AppBootSplash from "@/components/AppBootSplash";
+import { LocaleProvider } from "@/lib/i18n/LocaleProvider";
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
   return (

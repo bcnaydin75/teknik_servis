@@ -1,5 +1,5 @@
-/* Teknik Servis PWA — HTML asla cache’lenmez (deploy sonrası sayfa hatasını önler) */
-const CACHE = "ts-shell-v5";
+/* Teknik Servis PWA — sadece offline/static; navigasyonu ASLA yakalama (iOS/Safari bozar) */
+const CACHE = "ts-shell-v6";
 const PRECACHE = [
   "/offline.html",
   "/manifest.webmanifest",
@@ -30,40 +30,18 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-function isApiOrAuth(url) {
-  const p = url.pathname;
-  return (
-    p.startsWith("/api/") ||
-    p.includes("auth.php") ||
-    p.includes("ping.php")
-  );
-}
-
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (isApiOrAuth(url)) return;
 
-  // Next.js build dosyaları: her zaman ağ (eski chunk = "This page couldn't load")
-  if (url.pathname.startsWith("/_next/")) {
-    return;
-  }
+  // Sayfa gezintisi ve Next.js chunk'ları — dokunma (Safari "couldn't load" önlemi)
+  if (req.mode === "navigate") return;
+  if (url.pathname.startsWith("/_next/")) return;
+  if (url.pathname.startsWith("/api/")) return;
 
-  // Sayfa gezintisi: sadece ağ — HTML cache deploy sonrası bozar
-  if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req).catch(async () => {
-        const offline = await caches.match("/offline.html");
-        return offline || new Response("Offline", { status: 503 });
-      })
-    );
-    return;
-  }
-
-  // İkon / manifest: stale-while-revalidate
   if (
     url.pathname.startsWith("/icons/") ||
     url.pathname.startsWith("/splashes/") ||

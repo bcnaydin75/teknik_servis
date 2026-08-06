@@ -49,9 +49,7 @@ export const metadata: Metadata = {
 const criticalBootCss = `
 html,body{background-color:#0f172a;color-scheme:dark;margin:0;min-height:100%;}
 html.admin-boot-light,html.admin-boot-light body{background-color:#f8fafc;color-scheme:light;}
-#app-boot-splash{position:fixed;inset:0;z-index:2147483646;background:#0f172a;pointer-events:none;display:flex;align-items:center;justify-content:center;}
-html.admin-boot-light #app-boot-splash{background:#f8fafc;}
-#app-boot-splash .boot-spinner{width:40px;height:40px;border:3px solid rgba(148,163,184,.25);border-top-color:#3b82f6;border-radius:50%;animation:boot-spin .7s linear infinite;}
+html.admin-boot-light{--boot-splash-bg:#f8fafc;}
 @keyframes boot-spin{to{transform:rotate(360deg)}}
 `;
 
@@ -87,6 +85,7 @@ const themeBootScript = `
       }
       var splash=document.getElementById('app-boot-splash');
       if(splash) splash.style.backgroundColor=c;
+      root.style.setProperty('--boot-splash-bg', c);
     }
     paintBody();
     if(!document.body) document.addEventListener('DOMContentLoaded', paintBody);
@@ -122,9 +121,6 @@ export default function RootLayout({
         suppressHydrationWarning
         className="flex min-h-dvh flex-col font-sans"
       >
-        <div id="app-boot-splash" aria-hidden="true">
-          <div className="boot-spinner" />
-        </div>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
