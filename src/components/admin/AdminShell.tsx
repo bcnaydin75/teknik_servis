@@ -40,43 +40,37 @@ export default function AdminShell({
     };
   }, [menuOpen]);
 
-  // Layout viewport yüksekliği — visualViewport kullanma (klavye navbar'ı yukarı iter)
+  // Klavye açıkken fixed alt menüyü gizle (yukarı zıplamasın)
   useEffect(() => {
-    const setAppHeight = () => {
-      const h = window.innerHeight || document.documentElement.clientHeight;
-      document.documentElement.style.setProperty("--app-height", `${Math.round(h)}px`);
-    };
-
     const syncKeyboard = () => {
       const vv = window.visualViewport;
       if (!vv) return;
-      // Klavye açıkken alt menüyü gizle (üstte asılı kalmasın)
-      const open = window.innerHeight - vv.height > 120;
+      const open = Math.max(0, window.innerHeight - vv.height) > 120;
       document.documentElement.classList.toggle("admin-keyboard-open", open);
     };
-
-    setAppHeight();
     syncKeyboard();
-    window.addEventListener("resize", setAppHeight);
     window.visualViewport?.addEventListener("resize", syncKeyboard);
     window.visualViewport?.addEventListener("scroll", syncKeyboard);
+    window.addEventListener("focusin", syncKeyboard);
+    window.addEventListener("focusout", syncKeyboard);
     return () => {
-      window.removeEventListener("resize", setAppHeight);
       window.visualViewport?.removeEventListener("resize", syncKeyboard);
       window.visualViewport?.removeEventListener("scroll", syncKeyboard);
+      window.removeEventListener("focusin", syncKeyboard);
+      window.removeEventListener("focusout", syncKeyboard);
       document.documentElement.classList.remove("admin-keyboard-open");
     };
   }, []);
 
   return (
-    <div className="flex h-[var(--app-height)] max-h-[var(--app-height)] flex-col overflow-hidden bg-slate-50 dark:bg-slate-950">
-      <div className="flex min-h-0 flex-1">
+    <div className="relative min-h-dvh bg-slate-50 dark:bg-slate-950">
+      <div className="flex min-h-dvh">
         <AdminSidebar
           mobileOpen={menuOpen}
           onMobileClose={() => setMenuOpen(false)}
         />
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
+        <main className="flex min-w-0 flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
           <PasswordChangeBanner />
 
           {/* Mobil üst bar */}
@@ -121,7 +115,7 @@ export default function AdminShell({
             </div>
           </header>
 
-          <div className="flex-1 p-4 pb-24 sm:p-6 lg:pb-6">{children}</div>
+          <div className="flex-1 p-4 pb-6 sm:p-6">{children}</div>
         </main>
       </div>
 

@@ -100,8 +100,8 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
       <div
         className={
           resolvedTheme === "dark"
-            ? "admin-dark h-[var(--app-height)] min-h-[var(--app-height)] bg-slate-950 text-slate-100"
-            : "h-[var(--app-height)] min-h-[var(--app-height)] bg-slate-50 text-slate-900"
+            ? "admin-dark min-h-dvh bg-slate-950 text-slate-100"
+            : "min-h-dvh bg-slate-50 text-slate-900"
         }
       >
         {children}

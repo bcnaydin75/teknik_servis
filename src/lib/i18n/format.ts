@@ -9,6 +9,16 @@ export function formatCurrency(amount: number, locale: Locale): string {
   }).format(amount);
 }
 
+/** Mobil kartlar için daha kısa tutar (₺60.000) */
+export function formatCurrencyCompact(amount: number, locale: Locale): string {
+  return new Intl.NumberFormat(LOCALE_BCP47[locale], {
+    style: "currency",
+    currency: "TRY",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
 export function formatDate(
   dateStr: string,
   locale: Locale,

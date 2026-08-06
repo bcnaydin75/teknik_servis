@@ -277,7 +277,7 @@ export default function AdminDashboard() {
       <button
         type="button"
         onClick={() => setAddModalOpen(true)}
-        className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-4 z-40 flex h-14 w-14 touch-manipulation items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-700 active:scale-95 lg:hidden"
+        className="admin-fab fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-4 z-40 flex h-14 w-14 touch-manipulation items-center justify-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 transition hover:bg-blue-700 active:scale-95 lg:hidden"
         aria-label={t("admin.shell.addDeviceAria")}
       >
         <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">

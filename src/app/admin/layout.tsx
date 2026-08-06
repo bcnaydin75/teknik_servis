@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Teknik Servis | Yönetim Paneli",
   description: "Teknik servis yönetim paneli",
   applicationName: "Teknik Servis Yönetim",
-  manifest: "/admin-manifest.webmanifest?v=5",
+  manifest: "/admin-manifest.webmanifest?v=6",
   appleWebApp: {
     capable: true,
     title: "Yönetim",

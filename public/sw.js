@@ -1,5 +1,5 @@
 /* Teknik Servis PWA — network-first navigations, cache static shell */
-const CACHE = "ts-shell-v1";
+const CACHE = "ts-shell-v2";
 const PRECACHE = [
   "/offline.html",
   "/manifest.webmanifest",

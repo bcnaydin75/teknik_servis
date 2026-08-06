@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { checkAuth } from "@/lib/auth-api";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import {
@@ -20,6 +21,11 @@ export default function AdminMobileNav({ onOpenMenu }: AdminMobileNavProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const [perms, setPerms] = useState<Permissions>(DEFAULT_PERMISSIONS);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     checkAuth().then((res) => {
@@ -33,10 +39,17 @@ export default function AdminMobileNav({ onOpenMenu }: AdminMobileNavProps) {
   const quickItems = allowed.filter((item) => item.mobileQuick);
   const slots = quickItems.slice(0, 4);
 
-  return (
+  const nav = (
     <nav
-      className="admin-mobile-nav z-30 shrink-0 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/95 lg:hidden"
+      className="admin-mobile-nav fixed inset-x-0 bottom-0 z-[60] border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-lg dark:border-slate-800 dark:bg-slate-900/95 lg:hidden"
       aria-label={t("nav.menu")}
+      style={{
+        // iOS PWA: layout viewport altına sabitle (kısa app-height tuzağı yok)
+        position: "fixed",
+        left: 0,
+        right: 0,
+        bottom: 0,
+      }}
     >
       <div className="mx-auto flex max-w-lg items-stretch justify-around">
         {slots.map((item) => {
@@ -88,4 +101,8 @@ export default function AdminMobileNav({ onOpenMenu }: AdminMobileNavProps) {
       </div>
     </nav>
   );
+
+  // body'ye portal: transform/height ancestor fixed'i bozmasın
+  if (!mounted) return null;
+  return createPortal(nav, document.body);
 }

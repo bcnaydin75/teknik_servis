@@ -61,9 +61,10 @@ body {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Mobil klavye açıkken alt menü yukarı kaymasın — gizle */
-html.admin-keyboard-open .admin-mobile-nav {
-  display: none;
+/* Mobil klavye açıkken fixed alt menüyü gizle */
+html.admin-keyboard-open .admin-mobile-nav,
+html.admin-keyboard-open .admin-fab {
+  display: none !important;
 }
 
 button:not(:disabled),

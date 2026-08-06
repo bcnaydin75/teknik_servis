@@ -2,7 +2,7 @@
 
 import type { DashboardStats } from "@/types/admin";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
-import { formatCurrency } from "@/lib/i18n/format";
+import { formatCurrencyCompact } from "@/lib/i18n/format";
 
 interface StatCardsProps {
   stats: DashboardStats;
@@ -82,25 +82,25 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
       {visibleCards.map((card) => {
         const value = stats[card.key] as number;
         const displayValue = card.currency
-          ? formatCurrency(value, locale)
+          ? formatCurrencyCompact(value, locale)
           : card.format!(value);
 
         return (
           <div
             key={card.key}
-            className="relative isolate rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
+            className="relative rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
           >
             {card.currency ? (
-              <>
+              <div className="pb-1">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 flex-1 text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
+                  <p className="text-xs font-medium leading-snug text-slate-500 sm:text-sm dark:text-slate-400">
                     {t(card.labelKey)}
                   </p>
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${card.bg} dark:bg-slate-700/80`}
                   >
                     <svg
-                      className={`h-4 w-4 sm:h-6 sm:w-6 ${card.text}`}
+                      className={`h-4 w-4 sm:h-5 sm:w-5 ${card.text}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -115,31 +115,25 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
                   </span>
                 </div>
                 <p
-                  className="mt-2 break-words text-[clamp(1rem,4.2vw,1.75rem)] font-bold leading-tight tabular-nums tracking-tight text-slate-900 dark:text-white"
+                  className="mt-2 w-full text-xl font-bold leading-none tracking-tight text-slate-900 sm:text-2xl dark:text-white"
                   title={displayValue}
                 >
                   {displayValue}
                 </p>
                 {stats.pos_satis_sayisi_bugun > 0 && (
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                     {t("common.salesCount", { count: stats.pos_satis_sayisi_bugun })}
                   </p>
                 )}
-                <p className="mt-0.5 hidden text-xs text-slate-400 sm:block dark:text-slate-500">
-                  {t(card.subKey)}
-                </p>
-              </>
+              </div>
             ) : (
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-2 pb-1">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
                     {t(card.labelKey)}
                   </p>
                   <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 sm:mt-2 sm:text-3xl dark:text-white">
                     {displayValue}
-                  </p>
-                  <p className="mt-0.5 hidden text-xs text-slate-400 sm:block dark:text-slate-500">
-                    {t(card.subKey)}
                   </p>
                 </div>
                 <span
@@ -162,7 +156,7 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
               </div>
             )}
             <div
-              className={`pointer-events-none absolute inset-x-0 bottom-0 h-1 overflow-hidden rounded-b-2xl bg-gradient-to-r ${card.color}`}
+              className={`pointer-events-none absolute inset-x-0 bottom-0 h-1 rounded-b-2xl bg-gradient-to-r ${card.color}`}
             />
           </div>
         );
