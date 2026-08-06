@@ -78,7 +78,7 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
   const visibleCards = cards.filter((card) => !card.posOnly || showPosStats);
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+    <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-4 lg:grid-cols-3">
       {visibleCards.map((card) => {
         const value = stats[card.key] as number;
         const displayValue = card.currency
@@ -88,7 +88,7 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
         return (
           <div
             key={card.key}
-            className="relative rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
+            className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm sm:p-6 dark:border-slate-700 dark:bg-slate-800"
           >
             {card.currency ? (
               <div className="pb-1">
@@ -127,32 +127,32 @@ export default function StatCards({ stats, showPosStats = true }: StatCardsProps
                 )}
               </div>
             ) : (
-              <div className="flex items-start justify-between gap-2 pb-1">
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-slate-500 sm:text-sm dark:text-slate-400">
+              <div className="flex h-full min-h-[5.5rem] flex-col pb-1">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-h-[2.5rem] flex-1 text-xs font-medium leading-snug text-slate-500 sm:min-h-0 sm:text-sm dark:text-slate-400">
                     {t(card.labelKey)}
                   </p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 sm:mt-2 sm:text-3xl dark:text-white">
-                    {displayValue}
-                  </p>
-                </div>
-                <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}
-                >
-                  <svg
-                    className={`h-5 w-5 sm:h-6 sm:w-6 ${card.text}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${card.bg} dark:bg-slate-700/80`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d={card.icon}
-                    />
-                  </svg>
-                </span>
+                    <svg
+                      className={`h-5 w-5 sm:h-6 sm:w-6 ${card.text}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d={card.icon}
+                      />
+                    </svg>
+                  </span>
+                </div>
+                <p className="mt-auto pt-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+                  {displayValue}
+                </p>
               </div>
             )}
             <div
