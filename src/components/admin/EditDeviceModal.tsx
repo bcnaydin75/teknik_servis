@@ -8,11 +8,13 @@ import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { formatCurrency, statusKey } from "@/lib/i18n/format";
 import { runAfterEffect } from "@/lib/run-after-effect";
 import CustomerAlert from "./CustomerAlert";
+import { useAdminModalOpen } from "./CurrencyAmountInput";
 import {
   ModalCloseButton,
   modalBackdropClass,
   modalInputClass,
   modalLabelClass,
+  modalOverlayClass,
   modalPrimaryBtnClass,
   modalSecondaryBtnClass,
   useModalHotkeys,
@@ -58,6 +60,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
     formRef,
     disabled: loading || inventoryLoading,
   });
+  useAdminModalOpen(Boolean(device));
 
   useEffect(() => {
     if (!device) return;
@@ -226,7 +229,7 @@ export default function EditDeviceModal({ device, onClose, onSuccess, canSeeCost
   const showDeliveryHint = device.cihaz_durumu !== "teslim_edildi";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
+    <div className={modalOverlayClass}>
       <button
         type="button"
         aria-label={t("common.close")}

@@ -5,14 +5,18 @@ import { fetchSuppliers, saveSupplier } from "@/lib/admin-api";
 import type { SupplierItem, SupplierTransaction } from "@/types/admin";
 import AdminShell from "./AdminShell";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
-import { formatCurrency, formatDateTime } from "@/lib/i18n/format";
+import { formatCurrency, formatDateTime, parseMoneyInput } from "@/lib/i18n/format";
 import { runAfterEffect } from "@/lib/run-after-effect";
+import CurrencyAmountInput, { useAdminModalOpen } from "./CurrencyAmountInput";
 import {
   ModalCloseButton,
   modalBackdropClass,
   modalCardClass,
   modalInputClass,
+  modalOverlayClass,
+  modalPanelBodyClass,
   modalPanelClass,
+  modalPanelFooterClass,
   modalPrimaryBtnClass,
   modalSecondaryBtnClass,
   modalTitleClass,
@@ -26,12 +30,16 @@ export default function SuppliersPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showTxForm, setShowTxForm] = useState(false);
+  const [txAmountDisplay, setTxAmountDisplay] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const supplierFormRef = useRef<HTMLFormElement>(null);
   const txFormRef = useRef<HTMLFormElement>(null);
 
   const closeSupplierForm = useCallback(() => setShowForm(false), []);
-  const closeTxForm = useCallback(() => setShowTxForm(false), []);
+  const closeTxForm = useCallback(() => {
+    setShowTxForm(false);
+    setTxAmountDisplay("");
+  }, []);
 
   useModalHotkeys({
     open: showForm,
@@ -43,6 +51,7 @@ export default function SuppliersPage() {
     onClose: closeTxForm,
     formRef: txFormRef,
   });
+  useAdminModalOpen(showForm || showTxForm);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,15 +97,20 @@ export default function SuppliersPage() {
   async function handleAddTx(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const amount = parseMoneyInput(txAmountDisplay);
+    if (amount <= 0) {
+      setToast(t("common.error"));
+      return;
+    }
     const res = await saveSupplier({
       action: "add_transaction",
       supplier_id: Number(form.get("supplier_id")),
       type: String(form.get("type")),
-      amount: Number(form.get("amount")),
+      amount,
       description: String(form.get("description") ?? "").trim() || undefined,
     });
     if (res.success) {
-      setShowTxForm(false);
+      closeTxForm();
       setToast(t("admin.suppliers.txRecorded"));
       load();
     } else {
@@ -130,7 +144,6 @@ export default function SuppliersPage() {
           </div>
         }
       >
-        {/* Mobil: masaüstü header'daki aksiyonlar burada */}
         <div className="mb-4 flex gap-2 lg:hidden">
           <button
             type="button"
@@ -183,8 +196,12 @@ export default function SuppliersPage() {
                       </span>
                     </div>
                     <div className="mt-2 flex gap-4 text-xs text-slate-500 dark:text-slate-400">
-                      <span>{t("admin.suppliers.debtShort")} {formatCurrency(s.toplam_borc, locale)}</span>
-                      <span>{t("admin.suppliers.paymentShort")} {formatCurrency(s.toplam_odeme, locale)}</span>
+                      <span>
+                        {t("admin.suppliers.debtShort")} {formatCurrency(s.toplam_borc, locale)}
+                      </span>
+                      <span>
+                        {t("admin.suppliers.paymentShort")} {formatCurrency(s.toplam_odeme, locale)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -193,7 +210,9 @@ export default function SuppliersPage() {
 
             <div className={modalCardClass}>
               <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-700">
-                <h2 className="font-bold text-slate-900 dark:text-slate-100">{t("admin.suppliers.recentTransactions")}</h2>
+                <h2 className="font-bold text-slate-900 dark:text-slate-100">
+                  {t("admin.suppliers.recentTransactions")}
+                </h2>
               </div>
               <div className="max-h-96 divide-y divide-slate-50 overflow-y-auto dark:divide-slate-800">
                 {transactions.map((tx) => (
@@ -204,14 +223,22 @@ export default function SuppliersPage() {
                         {tx.description ?? t("common.dash")} · {formatDateTime(tx.created_at, locale)}
                       </p>
                     </div>
-                    <span className={`font-bold ${tx.type === "borc" ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    <span
+                      className={`font-bold ${
+                        tx.type === "borc"
+                          ? "text-red-500 dark:text-red-400"
+                          : "text-emerald-600 dark:text-emerald-400"
+                      }`}
+                    >
                       {tx.type === "borc" ? "+" : "−"}
                       {formatCurrency(tx.amount, locale)}
                     </span>
                   </div>
                 ))}
                 {transactions.length === 0 && (
-                  <p className="px-6 py-8 text-center text-sm text-slate-400">{t("admin.suppliers.noTransactionsYet")}</p>
+                  <p className="px-6 py-8 text-center text-sm text-slate-400">
+                    {t("admin.suppliers.noTransactionsYet")}
+                  </p>
                 )}
               </div>
             </div>
@@ -220,46 +247,32 @@ export default function SuppliersPage() {
       </AdminShell>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={modalOverlayClass}>
           <button
             type="button"
             aria-label={t("common.close")}
             className={modalBackdropClass}
             onClick={closeSupplierForm}
           />
-          <form
-            ref={supplierFormRef}
-            onSubmit={handleAddSupplier}
-            className={modalPanelClass}
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <h3 className={modalTitleClass}>{t("admin.suppliers.newSupplier")}</h3>
-              <ModalCloseButton onClick={closeSupplierForm} label={t("common.close")} />
+          <form ref={supplierFormRef} onSubmit={handleAddSupplier} className={modalPanelClass}>
+            <div className={modalPanelBodyClass}>
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className={modalTitleClass}>{t("admin.suppliers.newSupplier")}</h3>
+                <ModalCloseButton onClick={closeSupplierForm} label={t("common.close")} />
+              </div>
+              <div className="space-y-3">
+                <input
+                  name="firma_adi"
+                  required
+                  placeholder={t("admin.suppliers.companyNameRequired")}
+                  className={modalInputClass}
+                />
+                <input name="telefon" placeholder={t("admin.suppliers.phone")} className={modalInputClass} />
+                <input name="email" placeholder={t("admin.suppliers.email")} className={modalInputClass} />
+                <input name="adres" placeholder={t("admin.suppliers.address")} className={modalInputClass} />
+              </div>
             </div>
-            <div className="space-y-3">
-              <input
-                name="firma_adi"
-                required
-                placeholder={t("admin.suppliers.companyNameRequired")}
-                className={modalInputClass}
-              />
-              <input
-                name="telefon"
-                placeholder={t("admin.suppliers.phone")}
-                className={modalInputClass}
-              />
-              <input
-                name="email"
-                placeholder={t("admin.suppliers.email")}
-                className={modalInputClass}
-              />
-              <input
-                name="adres"
-                placeholder={t("admin.suppliers.address")}
-                className={modalInputClass}
-              />
-            </div>
-            <div className="mt-5 flex gap-3">
+            <div className={`flex gap-3 ${modalPanelFooterClass}`}>
               <button type="button" onClick={closeSupplierForm} className={modalSecondaryBtnClass}>
                 {t("common.cancel")}
               </button>
@@ -272,51 +285,47 @@ export default function SuppliersPage() {
       )}
 
       {showTxForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={modalOverlayClass}>
           <button
             type="button"
             aria-label={t("common.close")}
             className={modalBackdropClass}
             onClick={closeTxForm}
           />
-          <form
-            ref={txFormRef}
-            onSubmit={handleAddTx}
-            className={modalPanelClass}
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <h3 className={modalTitleClass}>{t("admin.suppliers.addTransactionTitle")}</h3>
-              <ModalCloseButton onClick={closeTxForm} label={t("common.close")} />
+          <form ref={txFormRef} onSubmit={handleAddTx} className={modalPanelClass}>
+            <div className={modalPanelBodyClass}>
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className={modalTitleClass}>{t("admin.suppliers.addTransactionTitle")}</h3>
+                <ModalCloseButton onClick={closeTxForm} label={t("common.close")} />
+              </div>
+              <div className="space-y-3">
+                <select name="supplier_id" required className={modalInputClass}>
+                  <option value="">{t("admin.suppliers.selectSupplier")}</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.firma_adi}
+                    </option>
+                  ))}
+                </select>
+                <select name="type" required className={modalInputClass}>
+                  <option value="borc">{t("admin.suppliers.debtPurchase")}</option>
+                  <option value="odeme">{t("admin.suppliers.paymentType")}</option>
+                </select>
+                <CurrencyAmountInput
+                  value={txAmountDisplay}
+                  onValueChange={(display) => setTxAmountDisplay(display)}
+                  placeholder={t("admin.suppliers.amount")}
+                  required
+                  suffix="₺"
+                />
+                <input
+                  name="description"
+                  placeholder={t("admin.suppliers.description")}
+                  className={modalInputClass}
+                />
+              </div>
             </div>
-            <div className="space-y-3">
-              <select name="supplier_id" required className={modalInputClass}>
-                <option value="">{t("admin.suppliers.selectSupplier")}</option>
-                {suppliers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.firma_adi}
-                  </option>
-                ))}
-              </select>
-              <select name="type" required className={modalInputClass}>
-                <option value="borc">{t("admin.suppliers.debtPurchase")}</option>
-                <option value="odeme">{t("admin.suppliers.paymentType")}</option>
-              </select>
-              <input
-                name="amount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                required
-                placeholder={t("admin.suppliers.amount")}
-                className={modalInputClass}
-              />
-              <input
-                name="description"
-                placeholder={t("admin.suppliers.description")}
-                className={modalInputClass}
-              />
-            </div>
-            <div className="mt-5 flex gap-3">
+            <div className={`flex gap-3 ${modalPanelFooterClass}`}>
               <button type="button" onClick={closeTxForm} className={modalSecondaryBtnClass}>
                 {t("common.cancel")}
               </button>
@@ -329,7 +338,7 @@ export default function SuppliersPage() {
       )}
 
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-xl dark:bg-slate-800 dark:ring-1 dark:ring-slate-600">
+        <div className="fixed bottom-6 right-6 z-[90] rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-xl dark:bg-slate-800 dark:ring-1 dark:ring-slate-600">
           {toast}
         </div>
       )}

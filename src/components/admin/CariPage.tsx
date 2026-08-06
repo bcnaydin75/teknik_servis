@@ -5,8 +5,9 @@ import AdminShell from "./AdminShell";
 import { fetchCariDetail, fetchCariList, postCariTransaction, searchCariCustomers } from "@/lib/settings-api";
 import type { CariCustomer, CariTransaction } from "@/types/settings";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
-import { formatCurrency, formatDate } from "@/lib/i18n/format";
+import { formatCurrency, formatDate, parseMoneyInput } from "@/lib/i18n/format";
 import { runAfterEffect } from "@/lib/run-after-effect";
+import CurrencyAmountInput from "./CurrencyAmountInput";
 
 export default function CariPage() {
   const { t, locale } = useTranslation();
@@ -51,8 +52,8 @@ export default function CariPage() {
   async function handleTx(e: FormEvent) {
     e.preventDefault();
     if (!selected) return;
-    const amount = parseFloat(txForm.amount);
-    if (isNaN(amount) || amount <= 0) return;
+    const amount = parseMoneyInput(txForm.amount);
+    if (amount <= 0) return;
     const res = await postCariTransaction(txForm.type, {
       customer_id: selected.id,
       amount,
@@ -135,7 +136,13 @@ export default function CariPage() {
                   <option value="odeme">{t("admin.cari.receivePayment")}</option>
                   <option value="borc">{t("admin.cari.addDebt")}</option>
                 </select>
-                <input type="number" step="0.01" min="0" value={txForm.amount} onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })} placeholder={t("admin.cari.amountPlaceholder")} required className="w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
+                <CurrencyAmountInput
+                  value={txForm.amount}
+                  onValueChange={(display) => setTxForm({ ...txForm, amount: display })}
+                  placeholder={t("admin.cari.amountPlaceholder")}
+                  required
+                  suffix="₺"
+                />
                 <input value={txForm.description} onChange={(e) => setTxForm({ ...txForm, description: e.target.value })} placeholder={t("admin.cari.descriptionPlaceholder")} className="w-full rounded-xl border border-slate-200 px-3 py-2 dark:border-slate-600 dark:bg-slate-900 dark:text-white" />
                 <button type="submit" className="w-full rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">{t("common.save")}</button>
               </form>

@@ -19,6 +19,36 @@ export function formatCurrencyCompact(amount: number, locale: Locale): string {
   }).format(amount);
 }
 
+/** Input gösterimi: 200000 → "200.000" (TR binlik ayırıcı) */
+export function formatMoneyInput(value: number | string): string {
+  const raw =
+    typeof value === "number"
+      ? Number.isFinite(value)
+        ? String(value)
+        : ""
+      : value;
+  if (!raw) return "";
+
+  const normalized = raw.replace(/\./g, "").replace(",", ".");
+  const [intPart, decPart] = normalized.split(".");
+  const digits = intPart.replace(/\D/g, "");
+  if (!digits) return decPart != null ? `0,${decPart.replace(/\D/g, "").slice(0, 2)}` : "";
+
+  const withDots = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  if (decPart == null) return withDots;
+  const decimals = decPart.replace(/\D/g, "").slice(0, 2);
+  return decimals.length > 0 ? `${withDots},${decimals}` : `${withDots},`;
+}
+
+/** "200.000,50" / "200000" → number */
+export function parseMoneyInput(raw: string): number {
+  const cleaned = raw.replace(/\s/g, "").replace(/[^\d,.-]/g, "");
+  if (!cleaned) return 0;
+  const normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  const n = Number(normalized);
+  return Number.isFinite(n) ? n : 0;
+}
+
 export function formatDate(
   dateStr: string,
   locale: Locale,

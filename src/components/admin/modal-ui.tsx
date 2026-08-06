@@ -52,10 +52,6 @@ export function useModalHotkeys(options: {
   }, [open, onClose, formRef, disabled]);
 }
 
-/** Modal panel — koyu modda yumuşak, göz yormayan */
-export const modalPanelClass =
-  "relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-900 dark:ring-1 dark:ring-slate-700/80";
-
 export const modalBackdropClass =
   "absolute inset-0 bg-slate-950/70 backdrop-blur-sm";
 
@@ -79,6 +75,29 @@ export const modalCloseBtnClass =
 
 export const modalCardClass =
   "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900";
+
+/** Overlay — alt menünün üstünde (nav z-60) */
+export const modalOverlayClass =
+  "fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-4";
+
+/** Mobil sheet: gövde kayar, footer sabit */
+export const modalSheetClass =
+  "relative flex max-h-[min(92dvh,100%)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl dark:bg-slate-900 dark:ring-1 dark:ring-slate-700/80";
+
+export const modalSheetBodyClass =
+  "min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 sm:px-6 sm:pt-6";
+
+export const modalSheetFooterClass =
+  "shrink-0 border-t border-slate-100 bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 dark:border-slate-800 dark:bg-slate-900";
+
+export const modalPanelClass =
+  "relative flex max-h-[min(92dvh,100%)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-slate-900 dark:ring-1 dark:ring-slate-700/80";
+
+export const modalPanelBodyClass =
+  "min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pb-4";
+
+export const modalPanelFooterClass =
+  "shrink-0 border-t border-slate-100 px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-slate-800";
 
 export function ModalCloseButton({
   onClick,
