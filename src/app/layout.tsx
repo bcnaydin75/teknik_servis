@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import AppProviders from "@/components/AppProviders";
+import AppleSplashLinks from "@/components/AppleSplashLinks";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,6 +46,13 @@ export const metadata: Metadata = {
   },
 };
 
+const criticalBootCss = `
+html,body{background-color:#0f172a;color-scheme:dark;margin:0;min-height:100%;}
+html.admin-boot-light,html.admin-boot-light body{background-color:#f8fafc;color-scheme:light;}
+#app-boot-splash{position:fixed;inset:0;z-index:2147483646;background:#0f172a;pointer-events:none;}
+html.admin-boot-light #app-boot-splash{background:#f8fafc;}
+`;
+
 /**
  * İlk boyamadan önce çalışır — admin'de beyaz flash'ı keser.
  * Müşteri sayfasında açık tema; admin'de localStorage / varsayılan koyu.
@@ -75,6 +83,8 @@ const themeBootScript = `
       if(document.body){
         document.body.style.backgroundColor=c;
       }
+      var splash=document.getElementById('app-boot-splash');
+      if(splash) splash.style.backgroundColor=c;
     }
     paintBody();
     if(!document.body) document.addEventListener('DOMContentLoaded', paintBody);
@@ -102,12 +112,15 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+        <AppleSplashLinks />
+        <style dangerouslySetInnerHTML={{ __html: criticalBootCss }} />
         <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
       </head>
       <body
         suppressHydrationWarning
         className="flex min-h-dvh flex-col font-sans"
       >
+        <div id="app-boot-splash" aria-hidden="true" />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
