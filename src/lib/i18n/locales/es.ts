@@ -109,6 +109,7 @@ export const messages = {
     },
     result: {
       trackingCode: "Código de seguimiento",
+      shop: "Empresa",
       customer: "Cliente",
       deviceModel: "Modelo del dispositivo",
       replacedParts: "Piezas sustituidas",

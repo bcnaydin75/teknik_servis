@@ -110,6 +110,7 @@ export const messages = {
     },
     result: {
       trackingCode: "Tracking Code",
+      shop: "Shop",
       customer: "Customer",
       deviceModel: "Device Model",
       replacedParts: "Replaced Parts",

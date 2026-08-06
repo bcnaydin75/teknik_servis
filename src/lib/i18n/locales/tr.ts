@@ -113,6 +113,7 @@ export const messages = {
     },
     result: {
       trackingCode: "Takip Kodu",
+      shop: "Firma",
       customer: "Müşteri",
       deviceModel: "Cihaz Modeli",
       replacedParts: "Değişen Parçalar",

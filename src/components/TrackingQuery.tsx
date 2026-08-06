@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { fetchRepairStatus } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n/LocaleProvider";
 import { runAfterEffect } from "@/lib/run-after-effect";
@@ -21,6 +21,7 @@ export default function TrackingQuery() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RepairData | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const runQuery = useCallback(async (kod: string) => {
     const trimmed = kod.trim();
@@ -58,6 +59,14 @@ export default function TrackingQuery() {
       }
     });
   }, [runQuery]);
+
+  useEffect(() => {
+    if (!result) return;
+    const id = window.setTimeout(() => {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+    return () => window.clearTimeout(id);
+  }, [result]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -177,7 +186,7 @@ export default function TrackingQuery() {
         </div>
 
         {result && (
-          <div className="mt-8">
+          <div ref={resultRef} className="mt-8 scroll-mt-6">
             <RepairResult data={result} />
           </div>
         )}

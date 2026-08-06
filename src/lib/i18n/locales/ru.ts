@@ -109,6 +109,7 @@ export const messages = {
     },
     result: {
       trackingCode: "Код отслеживания",
+      shop: "Мастерская",
       customer: "Клиент",
       deviceModel: "Модель устройства",
       replacedParts: "Заменённые детали",

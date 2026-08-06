@@ -104,6 +104,14 @@ export default function RepairResult({ data }: RepairResultProps) {
           <p className="mt-1 font-mono text-xl font-bold tracking-wide text-slate-900">
             {data.takip_kodu}
           </p>
+          {data.firma_adi?.trim() && (
+            <p className="mt-2 text-sm text-slate-600">
+              <span className="font-medium text-slate-500">
+                {t("customer.result.shop")}:{" "}
+              </span>
+              <span className="font-semibold text-slate-800">{data.firma_adi.trim()}</span>
+            </p>
+          )}
         </div>
         <span
           className={`inline-flex w-fit items-center rounded-full px-4 py-1.5 text-sm font-semibold ring-1 ring-inset ${statusClass}`}
