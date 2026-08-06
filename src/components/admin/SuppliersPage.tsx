@@ -130,6 +130,27 @@ export default function SuppliersPage() {
           </div>
         }
       >
+        {/* Mobil: masaüstü header'daki aksiyonlar burada */}
+        <div className="mb-4 flex gap-2 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setShowTxForm(true)}
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 touch-manipulation active:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200"
+          >
+            {t("admin.suppliers.addTransaction")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-semibold text-white touch-manipulation active:bg-blue-700 dark:bg-blue-700"
+          >
+            <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+            </svg>
+            {t("admin.suppliers.addSupplier")}
+          </button>
+        </div>
+
         <div className="mb-6 rounded-2xl bg-gradient-to-r from-violet-700 to-indigo-700 p-6 text-white shadow-lg dark:from-violet-900 dark:to-indigo-900">
           <p className="text-sm text-violet-200/90">{t("admin.suppliers.totalRemainingDebt")}</p>
           <p className="mt-1 text-3xl font-bold">{formatCurrency(totalDebt, locale)}</p>
